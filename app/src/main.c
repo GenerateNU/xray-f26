@@ -12,35 +12,27 @@ static const struct gpio_dt_spec led_2 = GPIO_DT_SPEC_GET(LED2, gpios);
 
 int main(void)
 {
-    // led_0.port is used because you need to check if the gpio controller itself is ready to be used, if you just do led_0.pin you will get a number like '9'
-    if (!device_is_ready(led_2.port))
-    {
-        return 0;
+    while (true) {
+        /* switch (state) {
+            case STATE_IDLE:
+                wait for command from the app to start scanning.
+            case STATE_TESTING:
+                test trying to read data
+                the data will be stored in a buffer.
+            case STATE_MONITORING:
+                move motors and scan for radiation, continue to read data
+                move motors left to right and then right to left row by row.
+                when done with one face, rotate to another face.
+            case STATE_RESCAN:
+                reconfirm radiation level reading,
+                move motors to scan the area agai.
+                after confirmation, switch back to STATE_MONITORING
+            case STATE_CLEANUP:
+                clean up after done with scanning, 
+                move motors to home whith limit siwtches.
+                send report to the app
+                switch to STATE_IDLE
+           }
+        */
     }
-
-    int state = 0;
-
-    int ret;
-    // configuration of led_0 pin
-    ret = gpio_pin_configure_dt(&led_2, GPIO_OUTPUT);
-
-    if (ret != 0)
-    {
-        return 0;
-    }
-
-    while (true)
-    {
-        state = !state;
-        ret = gpio_pin_set_dt(&led_2, state);
-        if (ret != 0)
-        {
-            return 0;
-        }
-        printk("LED is now in state: %d", state);
-
-        k_msleep(4000);
-    }
-
-    return 0;
 }
