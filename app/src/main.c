@@ -15,7 +15,7 @@ int main(void)
     /*
 
     ISRs: 
-        ISRs will be active thorughout the code and will be alive(?) in any part of the states. 
+        ISRs will be active thorughout the code and will be alive in any part of the states. 
         used for: limit switches, e-stop, and nfault handling 
 
 
@@ -43,7 +43,7 @@ int main(void)
                     JOG: 
                         JOG + axis/direction
 
-            <EXIT WHEN> all messages are turned into a strucutrued format --> MOTION COMMANDS
+            <EXIT WHEN> all messages are turned into a structured format --> MOTION COMMANDS
 
             [MOTION COMAMNDS] 
                 SCAN: 
@@ -77,7 +77,7 @@ int main(void)
 
 
         CASE TASK COMPLETED
-            we set a time limit (2 minutes?) and poll to make sure that we don't get any additional commands from the app. 
+            we set a time limit (2 minutes) and poll to make sure that we don't get any additional commands from the app. 
         
         <EXIT WHEN> either: 
             1. we get a new command from the app --> CASE TASK
