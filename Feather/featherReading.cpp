@@ -62,7 +62,7 @@ int hexDigit(char c) {
 }
 
 // Returns true and sets *result (uSv/h) if the frame is valid
-bool parseFrame(const Frame& f, float* result) {
+bool parseFrame(const Frame& f, int* result) {
   if (f.len < 3) return false;
 
   char body[sizeof(f.data)];
@@ -78,24 +78,33 @@ bool parseFrame(const Frame& f, float* result) {
   char* p = body;
   while (*p == ' ') p++;               
   char* after;
-  float value = strtof(p, &after);
+  int value = strtof(p, &after);
   if (after == p) return false;
 
-  *result = value * 0.01f;
+  *result = value;
   return true;
+}
+
+void sendPacket(int payload) {
+  Serial1.write(STX);
+  Serial1.write(payload);
+  Serial1.write((uint8_t) (payload + STX));
+  Serial1.write(ETX);
 }
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(9600);
   queue_init(&queue, sizeof(Frame), 8); 
 }
 void loop() {
    while (queue_try_remove(&queue, &frame0)) {
-    float uSv;
-    if (parseFrame(frame0, &uSv)) {
-      Serial.printf("%.2f uSv/h\r\n", uSv);
+    int rad;
+    if (parseFrame(frame0, &rad)) {
+      Serial.printf("%d uRg/h\r\n", rad);
+      sendPacket(rad);
     } else {
-      Serial.print("Bad frame: ");
+      Serial.print("Bad frame");
     }
   }
 }
