@@ -1,2 +1,3 @@
 build/
 prj.conf
+.venv
