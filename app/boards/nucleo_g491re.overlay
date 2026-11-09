@@ -14,12 +14,12 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
             every pulse moves the motor one microstep
             # of pulses = how far it foes
             how fast my pulse = how fast it goes  */
-        step-gpios = <&gpiob 11 GPIO_ACTIVE_HIGH>;
+        step-gpios = <&gpioa 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
         /* DIR GPIOS:
             this picks like which way the motor goes (right or left)
             we set this before stepping and wait at least 5 mu/sec after changing it */
-        dir-gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
-        limit-gpios = <&gpiob 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        dir-gpios = <&gpiob 10 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        ena-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>;
         /* ENA GPIOS:
             this turns the driver's power on/off
             for the testing driver this is alr enabled by default when unconnected
