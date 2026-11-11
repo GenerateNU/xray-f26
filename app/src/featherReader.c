@@ -39,7 +39,9 @@ void uart_cb(const struct device *dev, void *user_data) {
             ring_buf_put(&bufA, buf, n);
             if (ring_buf_space_get(&bufA) == 0) {
                 k_sem_give(&semFeather);
-                // would i lose data if only part of the frame makes it?
+                // i lose data if only part of the frame makes it...
+                // maybe it's better to immediately parse when theres data in the buffer
+                // test it out. prob won't matter if it's moving really slow. 
             }
         }
     }
@@ -49,7 +51,7 @@ int parsePacket(uint8_t frame[]) {
     // the frame is structured as STX radiation checksum ETX
     // checksum is raditation value plus STX (2)
     uint8_t checksumVal = frame[CEHCKSUMINDEX]; 
-    uint8_t checksum = STX + frame[RADIATIONINDEX];
+    uint8_t checksum = (STX + frame[RADIATIONINDEX]);
     uint8_t radiation = frame[RADIATIONINDEX];
 
     if (checksumVal != checksum) {
