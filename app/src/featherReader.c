@@ -11,7 +11,7 @@
 #define CEHCKSUMINDEX 2
 
 /// ask about this and overlays
-static const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(usart1));
+static const struct device *uart = DEVICE_DT_GET(DT_NODELABEL(lpuart1));
 
 //RING_BUF_DECLARE(bufDump, 200);
 
@@ -56,6 +56,11 @@ int parsePacket(uint8_t frame[]) {
 
     if (checksumVal != checksum) {
         return 1;
+    }
+
+    if (radiation >= threshold ) {
+        // activate interupt.
+        // irq_enable(IRQ_Radiation);
     }
 
     printk("%d", radiation);

@@ -1,0 +1,6 @@
+&lpuart1 {
+    pinctrl-0 = <&lpuart1_tx_pb11 &lpuart1_rx_pb10>;
+    pinctrl-names = "default";
+    current-speed = <9600>;
+    status = "okay";
+};
