@@ -37,12 +37,7 @@ void uart_cb(const struct device *dev, void *user_data) {
         n = uart_fifo_read(dev, buf, sizeof(buf));
         if (n > 0) {
             ring_buf_put(&bufA, buf, n);
-            if (ring_buf_space_get(&bufA) == 0) {
-                k_sem_give(&semFeather);
-                // i lose data if only part of the frame makes it...
-                // maybe it's better to immediately parse when theres data in the buffer
-                // test it out. prob won't matter if it's moving really slow. 
-            }
+            k_sem_give(&semFeather);
         }
     }
 }
@@ -55,7 +50,7 @@ int parsePacket(uint8_t frame[]) {
     uint8_t radiation = frame[RADIATIONINDEX];
 
     if (checksumVal != checksum) {
-        return 1;
+        return -1;
     }
 
     if (radiation >= threshold ) {
@@ -85,42 +80,41 @@ void bufReader() {
     uint8_t n;
     uint8_t packet[4];
     int packetLen = 0;
+    while (1) {
+        k_sem_take(&semFeather, K_FOREVER);
 
-    k_sem_take(&semFeather, K_FOREVER);
+        n = ring_buf_get(&bufA, buf, sizeof(buf));
 
-    n = ring_buf_get(&bufA, buf, sizeof(buf));
+        bool startFound = false;
 
-    bool startFound = false;
+        if (n > 1) {
+            for (int i = 0; i < n; i++) {
+                if (buf[i] == STX) {
+                    startFound = true;
+                    packet[packetLen] = buf[i];
+                    packetLen++;
+                    continue;
+                }
 
-    if (n > 1) {
-        for (int i = 0; i < n; i++) {
-            if (buf[i] == STX) {
-                startFound = true;
-                packet[packetLen] = buf[i];
-                packetLen++;
-                continue;
-            }
+                if (startFound && (packetLen < 4)) {
+                    packet[packetLen] = buf[i];
+                    packetLen++;
+                }
 
-            if (startFound && (packetLen <= 4)) {
-                packet[packetLen] = buf[i];
-                packetLen++;
-            }
+                if (buf[i] == ETX && startFound && (packetLen == 4)) {
+                    parsePacket(packet);
+                    k_sem_give(&semFeather);
+                    startFound = false;
+                    packetLen = 0;
+                }
 
-            if (buf[i] == ETX && startFound && (packetLen == 4)) {
-                parsePacket(packet);
-                k_sem_give(&semFeather);
-                startFound = false;
-                packetLen = 0;
-            }
-
-            if (packetLen > 4) {
-                packetLen = 0;
-                startFound = false;
+                if (packetLen > 4) {
+                    packetLen = 0;
+                    startFound = false;
+                }
             }
         }
     }
-
-    return 0;
 }
 
 // is this right...
@@ -131,11 +125,13 @@ int featherSerialISR() {
     // setup
     if (!device_is_ready(uart)) {
         //return?
-        return 1;
+        return -1;
     }
 
     uart_irq_callback_user_data_set(uart, uart_cb, NULL);
     uart_irq_rx_enable(uart);
+
+    return 0;
 }
 
 // fill the buffer. once filled. give semaphore.
