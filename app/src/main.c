@@ -16,13 +16,13 @@
 #define MIN_STEP_INTERNVAL_US 10 
 
 //pwm
-#define DIR_CHANGE_SETTLE_US   1000 
+#define DIR_CHANGE_SETTLE_US  1000 
 
 /*
     motor --> 200 full steps per rev x microstepping ( to match the uh dm542t dip switches)
 */
 #define FULL_STEPS_PER_REV 200 
-#define MICROSTEPS 25 
+#define MICROSTEPS 4 
 #define STEPS_PER_REV (FULL_STEPS_PER_REV * MICROSTEPS)
 
 // once there is a gantry: steps per mm = STEPS_PER_REV / mm per rev (<-- this is essentially the lenght of the thing)
@@ -131,21 +131,6 @@ static int move_steps(int steps, int dir, uint32_t step_interval_us) {
     k_busy_wait(DIR_STEPUP_US);
 
 
-    /* 1. make sure pulses are stopped: STEP held low 
-    gpio_pin_set_dt(&step_pin, 0);
-    k_busy_wait(DIR_CHANGE_SETTLE_US);
-    printk("DIR: %d \n", dir);
-
-
-     2. change direction 
-    gpio_pin_set_dt(&dir_pin, dir);
-
-     3. let DIR settle before the first pulse 
-    k_busy_wait(DIR_STEPUP_US);
-    printk("DIR: %d \n", dir);
-
-    */
-
 
     /* 4. the for-loop below starts pulsing */
 
@@ -174,7 +159,7 @@ static int move_steps(int steps, int dir, uint32_t step_interval_us) {
 
 static void test_slow_steps(void) {
     printk("\n [TEST 01] 10 slow steps, 1 step/sec");
-    for (int i = 1; i <= MICROSTEPS; i ++) {
+    for (int i = 1; i <= 50; i ++) {
         // reset the limit hit flag
         //limit_hit = false;
         //ticky tock. one tick is 16 pulses 
@@ -188,7 +173,7 @@ static void test_slow_steps(void) {
 
 static void test_one_rev(void) {
     printk("\n [TEST 02] 1 rev forward, 1 back, 5 times ");
-    for (int round = 1; round <= 1; round++) {
+    for (int round = 1; round <= 4; round++) {
         //limit_hit = false;
         // 3200 steps (aka 1 rev), direction 1(aka fwd), about 3 seconds per rev 
         int fwd = move_steps(STEPS_PER_REV, 1, 1000);
@@ -209,14 +194,15 @@ static void test_one_rev(void) {
 
 };
 
+/* 
 
 static void test_speed_sweep(void) {
 
-    static const uint32_t intervals_us[] = {2000, 1000, 500, 300 , 200, 150};
+    static const uint32_t intervals_us[] = {2000, 1000, 500, 300 , 200};
 
     // steps_per_sec * 5, 1, 1000 us/step -> 12 RPM | 0.73 A, 17.56
     // steps_per_sec * 5, 1, 500 us/step --> 24 RPM |  0.853 A, 20.47
-    // steps_per_sec * 5, 1, 300 us/step --> 39 RPM |  0.765 A,  18.67
+    // steps_per_sec * 5, 1, 300 us/step --> 0.7 RPM |  0.765 A,  18.67
     // steps_per_sec * 5, 1, 200 us/step --> 60 RPM | 0.491 A, 11.78
     
 
@@ -228,7 +214,7 @@ static void test_speed_sweep(void) {
     for (int s = 0; s < num_speeds; s++) {
         uint32_t steps_per_sec = 1000000 / intervals_us[s];
         uint32_t rpm = steps_per_sec * 60 / STEPS_PER_REV;
-        int steps = steps_per_sec * 5;
+        int steps = steps_per_sec * 10;
 
         printk("[TEST 03] %u us/step = %u steps/s = %u RPM\n", intervals_us[s], steps_per_sec, rpm);
 
@@ -247,10 +233,15 @@ static void test_speed_sweep(void) {
     }
 }
 
+*/
+
+
+
 static void test_constant_speed(void){
     printk("\n [TEST 04] SPEED SWEEEP --> 2s at each speed, will proceed from slow to fast");
 
     static const uint32_t intervals_us[] = {800};
+    // about 60 RPM
     int num_speeds = sizeof(intervals_us) / sizeof(intervals_us[0]);
 
     for (int s = 0; s < num_speeds; s++) {
