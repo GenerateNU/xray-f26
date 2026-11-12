@@ -371,7 +371,7 @@ int main(void)
     k_msleep(2000);
     test_slow_steps();
     test_one_rev();
-    test_speed_sweep();
+    //test_speed_sweep();
     test_constant_speed();
     //about 62 rpm
     //test_run_seconds(10, 300);
