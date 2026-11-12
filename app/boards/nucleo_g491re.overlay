@@ -1,0 +1,76 @@
+/* hi so this is like the device tree overlay, aka like which hardwares are connected to where
+
+WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
+    SPI PROTOCAL FOR THE MOTORS
+    ENA PINS FOR THE MOTORS
+
+    */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/spi/spi.h>
+
+
+/{
+    zephyr,user {
+        /* STEP GPIOS:
+            every pulse moves the motor one microstep
+            # of pulses = how far it foes
+            how fast my pulse = how fast it goes  */
+
+        //FINISH UP ON THE SETTING AFTER THE SPI PROTOCAL IS DONE
+        x-step-gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        y-step-gpios = <&gpiob 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        z-step-gpios = <&gpioa 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        /* DIR GPIOS:
+            this picks like which way the motor goes (right or left)
+            we set this before stepping and wait at least 5 mu/sec after changing it */
+        x-dir-gpios = <&gpioa 1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        y-dir-gpios = <&gpiob 7 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        z-dir-gpios = <&gpioa 9 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+
+
+        x-ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+        y-ena-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+        z-ena-gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+
+        /* ENA GPIOS:
+            this turns the driver's power on/off
+            for the testing driver this is alr enabled by default when unconnected
+            so that;s why we dont have it yet... but will need to impl for the real one*/
+        x-limit-gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+        y-limit-gpios = <&gpiob 9 GPIO_ACTIVE_LOW>;
+        z-limit-gpios = <&gpioc 6 GPIO_ACTIVE_LOW>;
+
+        /* TODO: impl the spi protocal for the actual driver (we dont need it for the curr one) */
+
+        // the SLEEP PINS
+        x-sleep-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+        y-sleep-gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+        z-sleep-gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+
+        // NFAULTTT
+        x-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        y-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        z-nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+
+        // what are cs pins? --> PROGRRAMS THE MICROSTEPPING MOD (CHIP SELEC.)
+        x-cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
+        y-cs-gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
+        z-cs-gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
+
+    };
+
+
+    /*
+       TODO:: DOUBLE CHECK ON THE SPI OVERLAY
+    */
+    &spi {
+        status = "okay";
+
+        spi-mosi-gpios = <&gpioc 12 GPIO_ACTIVE_LOW>;
+        spi-miso-gpios = <&gpioc 11 GPIO_ACTIVE_LOW>;
+        spi-sck-gpios = <&gpioc 10 GPIO_ACTIVE_LOW>;
+
+
+
+    }
+};
