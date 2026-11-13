@@ -8,7 +8,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(firepod)
 
 # app is a predesignated target that zephyr uses
-target_sources(app PRIVATE src/main.c src/featherReader.c)
+target_sources(app PRIVATE src/main.c)
 
 
 #[[

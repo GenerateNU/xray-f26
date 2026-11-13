@@ -11,7 +11,7 @@
 #define CEHCKSUMINDEX 2
 
 /// ask about this and overlays
-static const struct device *uart_feather = DEVICE_DT_GET(DT_NODELABEL(lpuart1));
+static const struct device *uart_feather = DEVICE_DT_GET(DT_NODELABEL(usart1));
 static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(lpuart1));
 
 //RING_BUF_DECLARE(bufDump, 200);
@@ -38,7 +38,7 @@ void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     while (uart_irq_rx_ready(dev)) {
         num_bytes = uart_fifo_read(dev, buf, sizeof(buf));
         if (num_bytes > 0) {
-            ring_buf_put(&bufA, buf, n);
+            ring_buf_put(&bufA, buf, num_bytes);
             k_sem_give(&semFeather);
         }
     }
