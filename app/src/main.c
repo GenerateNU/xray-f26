@@ -157,6 +157,7 @@ static int move_steps(int steps, int dir, uint32_t step_interval_us) {
  --------------TESTS!!-----------------------
 */
 
+/*
 static void test_slow_steps(void) {
     printk("\n [TEST 01] 10 slow steps, 1 step/sec");
     for (int i = 1; i <= 50; i ++) {
@@ -168,30 +169,27 @@ static void test_slow_steps(void) {
         k_msleep(1000);
     };
 };
+*/
+
 
 
 
 static void test_one_rev(void) {
-    printk("\n [TEST 02] 1 rev forward, 1 back, 5 times ");
+    const uint32_t interval_us = 500;
+
+    printk("\n[TEST 02] 1 rev forward, 1 back, 4 times\n");
+
     for (int round = 1; round <= 4; round++) {
         //limit_hit = false;
-        // 3200 steps (aka 1 rev), direction 1(aka fwd), about 3 seconds per rev 
-        int fwd = move_steps(STEPS_PER_REV, 1, 1000);
-        // 200, 1, 2500 --> current draw is about 0.641 A, 15.4 W 
-        // 2500 us/s --> 7.5 rpm 
-            // --> divide rpm by 30  (output rpm)
-            // (output rpm * (20pi/90 (aka 6.98)) (mm/s)) 
-            // 
-        // 1000 us/s -->  18.75 rpm
-        // 500 us/s --> 37.5 rpm
+
+        int fwd = move_steps(STEPS_PER_REV, 1, interval_us);
         k_msleep(500);
-        // 1 rev, direction 0 (aka back), about 3 sec per rev 
-        int back = move_steps(STEPS_PER_REV, 0, 1000);
-        printk("[TEST 02] \n round %d: \n fwd %d \n back %d \n expected %d each \n", 
-                round, fwd, back, STEPS_PER_REV);
+
+        int back = move_steps(STEPS_PER_REV, 0, interval_us);
+        printk("[TEST 02] round %d: fwd %d, back %d, expected %d each\n",
+               round, fwd, back, STEPS_PER_REV);
         k_msleep(500);
     };
-
 };
 
 /* 
@@ -237,6 +235,7 @@ static void test_speed_sweep(void) {
 
 
 
+/*
 static void test_constant_speed(void){
     printk("\n [TEST 04] SPEED SWEEEP --> 2s at each speed, will proceed from slow to fast");
 
@@ -261,6 +260,7 @@ static void test_constant_speed(void){
 
     }
 }
+*/
 
 
 int main(void)
@@ -369,10 +369,10 @@ int main(void)
     }
 
     k_msleep(2000);
-    test_slow_steps();
+    //test_slow_steps();
     test_one_rev();
     //test_speed_sweep();
-    test_constant_speed();
+    //test_constant_speed();
     //about 62 rpm
     //test_run_seconds(10, 300);
 
