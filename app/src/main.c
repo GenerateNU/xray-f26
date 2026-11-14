@@ -27,10 +27,8 @@ volatile uint8_t threshold = 1; // need to figure out how the app can change thi
 void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
     int num_bytes;
-
-    if (!uart_irq_update(dev)) {
-        return;
-    }
+    
+    uart_irq_update(dev);
 
     // keep putting into buffer, give semaphore
     while (uart_irq_rx_ready(dev)) {
@@ -126,10 +124,10 @@ int feather_serial_isr_init(void) {
 
 // 'gpios' refers to the property name within the led0 node, which is itself inside the leds parent node in the devicetree
 // you can see this^^ in code if you search for the 'zephyr/boards/nordic/nrf54l15dk/nrf54l15dk_common.dtsi' file
-static const struct gpio_dt_spec led_2 = GPIO_DT_SPEC_GET(LED2, gpios);
 
 int main(void)
 {
+    printk("starting\n");
     feather_serial_isr_init();
 
     while (true) {

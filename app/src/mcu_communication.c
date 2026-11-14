@@ -12,11 +12,11 @@
 
 /// ask about this and overlays
 static const struct device *uart_feather = DEVICE_DT_GET(DT_NODELABEL(usart1));
-static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(lpuart1));
+static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(lpuart1)); // will change
 
 //RING_BUF_DECLARE(bufDump, 200);
 //single buffer for now 5 frames, 20 bytes, 4 bytes each
-RING_BUF_DECLARE(bufA, 20);
+RING_BUF_DECLARE(buf_feather, 20);
 //RING_BUF_DECLARE(bufB, 10);
 // buffer with only radiation data
 RING_BUF_DECLARE(bufRad, 20);
@@ -38,7 +38,7 @@ void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     while (uart_irq_rx_ready(dev)) {
         num_bytes = uart_fifo_read(dev, buf, sizeof(buf));
         if (num_bytes > 0) {
-            ring_buf_put(&bufA, buf, num_bytes);
+            ring_buf_put(&buf_feather, buf, num_bytes);
             k_sem_give(&semFeather);
         }
     }
@@ -86,7 +86,7 @@ void buf_reader() {
     while (1) {
         k_sem_take(&semFeather, K_FOREVER);
 
-        n = ring_buf_get(&bufA, buf, sizeof(buf));
+        n = ring_buf_get(&buf_feather, buf, sizeof(buf));
 
         bool startFound = false;
 
@@ -135,6 +135,7 @@ int feather_serial_isr_init() {
 }
 
 // pc communication
+
 void pc_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
     int n;
@@ -142,7 +143,24 @@ void pc_rx_uart_cb(const struct device *dev, void *user_data) {
     if (!uart_irq_update(dev)) {
         return;
     }
+
+    // put whatever is read into a buffer
 }
+
+// another function to 
+/*
+        read PC and parse to get STX START_SCAN THRESHOLD FACES_TO_SCAN CHECKSUM ETX
+        if (START_SCAN) {
+            check checksum, correct send ACK, incorrect send NAK.
+            PC WILL SEND AGAIN IF NAK or no response recieved
+            
+         uart_irq_rx_enable(uart_feather); // to start reading from feather
+         k_thread_resume(...); // start the thread to send data to PC
+         set threshold 
+        }
+
+    
+*/
 
 void pc_tx_uart_cb(const struct device *dev, void *user_data) {
     // position, face, timestamp (ill get it from the pc), value
@@ -154,7 +172,12 @@ void pc_tx_uart_cb(const struct device *dev, void *user_data) {
     if (!uart_irq_update(dev)) {
         return;
     }
-
+    /*
+    if (end of scan) {
+        send end of scan to pc
+        uart_fifo_fill(dev, end, sizeof(end));
+    }
+    */
     if (ring_buf_size_get(&bufRad) == 0) {
         uart_irq_tx_disable(uart_pc);
     } else {
@@ -176,6 +199,9 @@ void pc_tx_uart_cb(const struct device *dev, void *user_data) {
         }
     }
 }
+
+// K_THREAD_DEFINE(start everyting, 1024, pc_send_signal, NULL, NULL, NULL, 5, 0, 0);
+// immeditately k_thread_suspend(); only start when pc tells it to start sedning
 
 int pc_send_signal() {
     while (1) {
@@ -199,7 +225,3 @@ int pc_serial_isr_init() {
 
     return 0;
 }
-
-// fill the buffer. once filled. give semaphore.
-// take semaphore, parse through buffer to get frame, then get radiation, check checksum, check radiation interupt. fill another buffer with just radiation data. 
-// if the mcu reads "start" { uart_irq_rx_enable(uart_pc); }
