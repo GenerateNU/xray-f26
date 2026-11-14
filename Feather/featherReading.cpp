@@ -86,6 +86,7 @@ bool parseFrame(const Frame& f, int* result) {
 }
 
 void sendPacket(int payload) {
+  Serial.write("sending Frame\n");
   Serial1.write(STX);
   Serial1.write(payload);
   Serial1.write((uint8_t) (payload + STX));
@@ -94,14 +95,17 @@ void sendPacket(int payload) {
 
 void setup() {
   Serial.begin(9600);
-  Serial1.begin(9600);
+  while (!Serial) delay(10);
+  Serial1.setTX(0);
+  Serial1.setRX(1);
+  Serial1.begin(115200);
   queue_init(&queue, sizeof(Frame), 8); 
 }
 void loop() {
    while (queue_try_remove(&queue, &frame0)) {
     int rad;
     if (parseFrame(frame0, &rad)) {
-      Serial.printf("%d uRg/h\r\n", rad);
+      Serial.printf("%d\r\n", rad);
       sendPacket(rad);
     } else {
       Serial.print("Bad frame");
@@ -149,6 +153,7 @@ void loop1() {
   switch (currentState) {
     case INIT_SEND:
       SerialHost.write(0x40);
+      Serial.printf("sending @\n");
       SerialHost.flush();
       setState(INIT_READ);
       break;
@@ -170,7 +175,7 @@ void loop1() {
         Serial.println("Switched to framed mode");
         setState(INIT_SEND);
       } else if (response == 0x07) {
-          Serial.println("OK");
+          Serial.printf("recieved 0x07\n");
           setState(POLLING);
       }
       break;
