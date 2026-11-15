@@ -157,6 +157,8 @@ static int move_steps(int steps, int dir, uint32_t step_interval_us) {
  --------------TESTS!!-----------------------
 */
 
+/* 
+
 static void test_slow_steps(void) {
     printk("\n [TEST 01] 10 slow steps, 1 step/sec");
     for (int i = 1; i <= 50; i ++) {
@@ -180,7 +182,7 @@ static void test_one_rev(void) {
         // 200, 1, 2500 --> current draw is about 0.641 A, 15.4 W 
         // 2500 us/s --> 7.5 rpm 
             // --> divide rpm by 30  (output rpm)
-            // (output rpm * (20pi/90 (aka 6.98)) (mm/s)) 
+            // (output rpm * (20pi/60 (aka 6.98)) (mm/s)) 
             // 
         // 1000 us/s -->  18.75 rpm
         // 500 us/s --> 37.5 rpm
@@ -189,44 +191,49 @@ static void test_one_rev(void) {
         int back = move_steps(STEPS_PER_REV, 0, 1000);
         printk("[TEST 02] \n round %d: \n fwd %d \n back %d \n expected %d each \n", 
                 round, fwd, back, STEPS_PER_REV);
+        
+        move_steps(0, 1, 1000);
+
         k_msleep(500);
     };
 
 };
 
-/* 
+
+
 
 static void test_speed_sweep(void) {
 
-    static const uint32_t intervals_us[] = {2000, 1000, 500, 300 , 200};
 
-    // steps_per_sec * 5, 1, 1000 us/step -> 12 RPM | 0.73 A, 17.56
-    // steps_per_sec * 5, 1, 500 us/step --> 24 RPM |  0.853 A, 20.47
-    // steps_per_sec * 5, 1, 300 us/step --> 0.7 RPM |  0.765 A,  18.67
-    // steps_per_sec * 5, 1, 200 us/step --> 60 RPM | 0.491 A, 11.78
-    
+    // FOR X and Y: {2000, 1000, 500, 300 , 200};
+    // FOR Z: {800, 500, 300, 200, 105};
+    static const uint32_t intervals_us[] = {500, 300, 200, 105};
 
     int num_speeds = sizeof(intervals_us) / sizeof(intervals_us[0]);
 
-    printk("\n [TEST 03] SPEED SWEEEP --> 2s at each speed, will proceed from slow to fast");
-    printk("[TEST 03] watch for rough spots or stalling! \n ");
+    printk("\n [TEST 03] SPEED SWEEEP --> CONSTANT SPEED: FOR Z AXIS! \n ");
 
     for (int s = 0; s < num_speeds; s++) {
         uint32_t steps_per_sec = 1000000 / intervals_us[s];
         uint32_t rpm = steps_per_sec * 60 / STEPS_PER_REV;
-        int steps = steps_per_sec * 10;
+        int steps = steps_per_sec * 12;
 
         printk("[TEST 03] %u us/step = %u steps/s = %u RPM\n", intervals_us[s], steps_per_sec, rpm);
 
         //limit_hit = false;
 
-        int done = move_steps(steps, 1, intervals_us[s]); 
-        if (done < steps) {
-            printk("[TEST 03] aborted \n");
-            return;
-        };
+        int half = steps / 2;
+        int fwd = move_steps(half, 1, intervals_us[s]);
+        int back = move_steps(half, 0, intervals_us[s]);
 
-        k_msleep(1000);
+        if (fwd < half || back < half) {
+            printk("[TEST 03] aborted\n");
+            return;
+        }
+
+        
+
+        k_msleep(2000);
 
         printk("[TEST 03] DONE");
 
@@ -238,29 +245,38 @@ static void test_speed_sweep(void) {
 
 
 static void test_constant_speed(void){
-    printk("\n [TEST 04] SPEED SWEEEP --> 2s at each speed, will proceed from slow to fast");
+    printk("\n [TEST 04] \n 500 steps, 300 steps, 200 steps, then 105");
 
-    static const uint32_t intervals_us[] = {800};
+    static const uint32_t intervals_us[] = {200};
     // about 60 RPM
     int num_speeds = sizeof(intervals_us) / sizeof(intervals_us[0]);
 
     for (int s = 0; s < num_speeds; s++) {
         uint32_t steps_per_sec = 1000000 / intervals_us[s];
         uint32_t rpm = steps_per_sec * 60 / STEPS_PER_REV;
-        int steps = steps_per_sec * 15;
+        int steps = steps_per_sec * 40;
 
         printk("[TEST 03] %u us/step = %u steps/s = %u RPM\n", intervals_us[s], steps_per_sec, rpm);
 
         //limit_hit = false;
 
-        int done = move_steps(steps, 1, intervals_us[s]); 
-        if (done < steps) {
-            printk("[TEST 03] aborted \n");
+        int half = steps / 2;
+        int fwd = move_steps(half, 1, intervals_us[s]);
+        int back = move_steps(half, 0, intervals_us[s]);
+
+        if (fwd < half || back < half) {
+            printk("[TEST 03] aborted\n");
             return;
-        };
+        }
+
 
     }
+
 }
+
+
+
+
 
 
 int main(void)
@@ -369,11 +385,10 @@ int main(void)
     }
 
     k_msleep(2000);
-    test_slow_steps();
-    test_one_rev();
+    //test_slow_steps();
+    //test_one_rev();
     //test_speed_sweep();
     test_constant_speed();
-    //about 62 rpm
     //test_run_seconds(10, 300);
 
     
