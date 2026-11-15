@@ -1,0 +1,64 @@
+/*
+ * X-Ray Motor Board: custom PCB with an STM32G491MET6 (LQFP80).
+ * Pins and clocks come from MotorBoard.ioc.
+ */
+
+/dts-v1/;
+#include <st/g4/stm32g491Xe.dtsi>
+#include <st/g4/stm32g491m(c-e)tx-pinctrl.dtsi>
+
+/ {
+	model = "X-Ray Motor Board (STM32G491ME)";
+
+	chosen {
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		status_led: status_led {
+			gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;	/* FW_STATUS_LED */
+			label = "FW_STATUS_LED";
+		};
+	};
+
+	aliases {
+		led0 = &status_led;
+	};
+};
+
+/* 24 MHz crystal on PF0/PF1 (HSE_IN / HSE_OUT) */
+&clk_hse {
+	clock-frequency = <DT_FREQ_M(24)>;
+	status = "okay";
+};
+
+/* 24 MHz / 6 = 4 MHz, x 85 = 340 MHz, / 2 = 170 MHz (same as MotorBoard.ioc) */
+&pll {
+	div-m = <6>;
+	mul-n = <85>;
+	div-p = <7>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(170)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <1>;
+};
+
+/* Debug UART: DBG_TX = PA2, DBG_RX = PA3 */
+&lpuart1 {
+	pinctrl-0 = <&lpuart1_tx_pa2 &lpuart1_rx_pa3>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};

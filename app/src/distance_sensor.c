@@ -10,12 +10,12 @@ LOG_MODULE_REGISTER(distance_sensor, LOG_LEVEL_INF);
 #define MODE_POLLING   1
 #define MODE_CALIBRATE 2
 
-#define SENSOR_MODE MODE_POLLING
+#define SENSOR_MODE MODE_INTERRUPT
 
 #define SENSOR_ADDR            0x29
-#define THRESH_LOW_MM          24
+#define THRESH_LOW_MM          35
 #define THRESH_HIGH_MM         50
-#define OFFSET_MM              0
+#define OFFSET_MM              23
 #define CAL_TARGET_MM          100
 #define CAL_SAMPLES            20
 #define SENSOR_THREAD_STACK    2048
@@ -102,7 +102,18 @@ static void run_interrupt(void)
     LOG_INF("Interrupt mode started (threshold %d mm)", THRESH_LOW_MM);
 
     while (1) {
-        k_sem_take(&sensor_sem, K_FOREVER);
+        /* DEBUG: wait up to 500 ms for the interrupt. If it doesn't come,
+         * print the D2 pin level and the sensor's own interrupt flag,
+         * then keep waiting. Change back to K_FOREVER once fixed. */
+        if (k_sem_take(&sensor_sem, K_MSEC(500)) != 0) {
+            uint8_t ready = 0;
+
+            VL53L4CD_CheckForDataReady(SENSOR_ADDR, &ready);
+            LOG_INF("debug: D2 pin level=%d, sensor says interrupt=%u",
+                    gpio_pin_get_raw(irq_pin.port, irq_pin.pin), ready);
+            continue;
+        }
+
         VL53L4CD_GetResult(SENSOR_ADDR, &r);
         VL53L4CD_ClearInterrupt(SENSOR_ADDR);
 
