@@ -17,15 +17,15 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
             how fast my pulse = how fast it goes  */
 
         //FINISH UP ON THE SETTING AFTER THE SPI PROTOCAL IS DONE
-        x-step-gpios = <&gpioa 0 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        y-step-gpios = <&gpiob 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        z-step-gpios = <&gpioa 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        x-step-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+        y-step-gpios = <&gpiob 6 GPIO_ACTIVE_HIGH>;
+        z-step-gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
         /* DIR GPIOS:
             this picks like which way the motor goes (right or left)
             we set this before stepping and wait at least 5 mu/sec after changing it */
-        x-dir-gpios = <&gpioa 1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        y-dir-gpios = <&gpiob 7 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        z-dir-gpios = <&gpioa 9 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        x-dir-gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+        y-dir-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+        z-dir-gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
 
 
         x-ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
@@ -36,9 +36,9 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
             this turns the driver's power on/off
             for the testing driver this is alr enabled by default when unconnected
             so that;s why we dont have it yet... but will need to impl for the real one*/
-        x-limit-gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
-        y-limit-gpios = <&gpiob 9 GPIO_ACTIVE_LOW>;
-        z-limit-gpios = <&gpioc 6 GPIO_ACTIVE_LOW>;
+        x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        y-limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        z-limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 
         /* TODO: impl the spi protocal for the actual driver (we dont need it for the curr one) */
 
@@ -52,25 +52,39 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
         y-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
         z-nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 
-        // what are cs pins? --> PROGRRAMS THE MICROSTEPPING MOD (CHIP SELEC.)
-        x-cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
-        y-cs-gpios = <&gpiod 2 GPIO_ACTIVE_LOW>;
-        z-cs-gpios = <&gpioc 7 GPIO_ACTIVE_LOW>;
+        //FWE STATUS LED
+        fwe-status-led-gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;
+
+
+
 
     };
+};
 
+&spi3{
 
-    /*
-       TODO:: DOUBLE CHECK ON THE SPI OVERLAY
-    */
-    &spi {
-        status = "okay";
+    cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>; // X
+                <&gpiod 2 GPIO_ACTIVE_LOW>; // Y
+                <&gpioc 7 GPIO_ACTIVE_LOW>; // Z
 
-        spi-mosi-gpios = <&gpioc 12 GPIO_ACTIVE_LOW>;
-        spi-miso-gpios = <&gpioc 11 GPIO_ACTIVE_LOW>;
-        spi-sck-gpios = <&gpioc 10 GPIO_ACTIVE_LOW>;
-
-
+    driver_x: drv8462@0{
+        compatible = "ti,drv8462";
+        reg = <0>;
+        spi_max_frequency = <5312500>;
 
     }
-};
+
+    driver_y: drv8462@1{
+        compatible = "ti,drv8462";
+        reg = <1>;
+        spi_max_frequency = <5312500>;
+
+    }
+
+    driver_z: drv8462@2{
+        compatible = "ti,drv8462";
+        reg = <2>;
+        spi_max_frequency = <5312500>;
+
+    }
+}

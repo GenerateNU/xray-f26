@@ -1,0 +1,6 @@
+
+description: this is the binding for the motor driver
+
+compatible: "ti,drv8462"
+
+include: spi-device.yaml
