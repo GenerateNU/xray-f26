@@ -119,12 +119,6 @@ int feather_serial_isr_init(void) {
     return 0;
 }
 
-// This is accessing the DeviceTree node through its label (can see the entire devicetree in generated zephyr.dts file in the build directory)
-#define LED2 DT_ALIAS(led0)
-
-// 'gpios' refers to the property name within the led0 node, which is itself inside the leds parent node in the devicetree
-// you can see this^^ in code if you search for the 'zephyr/boards/nordic/nrf54l15dk/nrf54l15dk_common.dtsi' file
-
 int main(void)
 {
     printk("starting\n");

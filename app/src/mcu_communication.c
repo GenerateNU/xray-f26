@@ -7,6 +7,9 @@
 #define STX 0x02
 #define ETX 0x03
 
+#define ACK 0x06
+#define NAK 0x15
+
 #define RADIATIONINDEX 1
 #define CEHCKSUMINDEX 2
 
@@ -22,17 +25,19 @@ RING_BUF_DECLARE(buf_feather, 20);
 RING_BUF_DECLARE(bufRad, 20);
 K_SEM_DEFINE(semFeather, 0, 1);
 
+RING_BUF_DECLARE(buf_pc, 20);
 K_SEM_DEFINE(pc_send_sem, 0, 1);
 
 float threshold = 1; // need to figure out how the app can change this value.
+
+volatile bool start_scan = false;
+volatile bool end_scan = false;
 
 void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
     int num_bytes;
 
-    if (!uart_irq_update(dev)) {
-        return;
-    }
+    uart_irq_update(dev);
 
     // keep putting into buffer, give semaphore when buffer is full
     while (uart_irq_rx_ready(dev)) {
@@ -106,7 +111,6 @@ void buf_reader() {
 
                 if (buf[i] == ETX && startFound && (packetLen == 4)) {
                     parse_packet(packet);
-                    k_sem_give(&semFeather);
                     startFound = false;
                     packetLen = 0;
                 }
@@ -134,33 +138,94 @@ int feather_serial_isr_init() {
     return 0;
 }
 
-// pc communication
+// *****************************************************************************************
+// ******************************* PC Communication ****************************************
+// *****************************************************************************************
 
 void pc_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
-    int n;
+    int num_bytes;
 
-    if (!uart_irq_update(dev)) {
-        return;
+    uart_irq_update(dev);
+
+    while (uart_irq_rx_ready(dev)) {
+        num_bytes = uart_fifo_read(dev, buf, sizeof(buf));
+        if (num_bytes > 0) {
+            ring_buf_put(&buf_pc, buf, num_bytes);
+            k_sem_give(&pc_send_sem);
+        }
     }
-
-    // put whatever is read into a buffer
 }
 
 // another function to 
 /*
-        read PC and parse to get STX START_SCAN THRESHOLD FACES_TO_SCAN CHECKSUM ETX
+        read PC and parse to get START_SCAN STX THRESHOLD FACES_TO_SCAN CHECKSUM ETX
         if (START_SCAN) {
             check checksum, correct send ACK, incorrect send NAK.
             PC WILL SEND AGAIN IF NAK or no response recieved
             
-         uart_irq_rx_enable(uart_feather); // to start reading from feather
-         k_thread_resume(...); // start the thread to send data to PC
-         set threshold 
+            uart_irq_rx_enable(uart_feather); // to start reading from feather
+            k_thread_resume(...); // start the thread to send data to PC
+            set threshold 
         }
-
-    
 */
+
+void pc_rx_wake_response() {
+    uint8_t buf[1];
+
+    while (1) {
+        k_sem_take(&pc_send_sem, K_FOREVER);
+        ring_buf_get(&buf_pc, buf, sizeof(buf));
+
+        if (buf[0] == '@') {
+            start_scan = true;
+            uart_poll_out(uart_pc, ACK);
+        }
+    }
+}
+
+void pc_rx_buf_parser() {
+    // will chnage
+    uint8_t buf[20];
+    uint8_t n;
+    uint8_t packet[4];
+    int packetLen = 0;
+
+    while (1) {
+        k_sem_take(&pc_send_sem, K_FOREVER);
+
+        n = ring_buf_get(&buf_feather, buf, sizeof(buf));
+
+        bool startFound = false;
+
+        if (n > 1) {
+            for (int i = 0; i < n; i++) {
+                if (buf[i] == STX) {
+                    startFound = true;
+                    packet[packetLen] = buf[i];
+                    packetLen++;
+                    continue;
+                }
+
+                if (startFound && (packetLen < 4)) {
+                    packet[packetLen] = buf[i];
+                    packetLen++;
+                }
+
+                if (buf[i] == ETX && startFound && (packetLen == 4)) {
+                    parse_packet(packet);
+                    startFound = false;
+                    packetLen = 0;
+                }
+
+                if (packetLen > 4) {
+                    packetLen = 0;
+                    startFound = false;
+                }
+            }
+        }
+    }
+}
 
 void pc_tx_uart_cb(const struct device *dev, void *user_data) {
     // position, face, timestamp (ill get it from the pc), value
@@ -169,34 +234,23 @@ void pc_tx_uart_cb(const struct device *dev, void *user_data) {
 
     int num_bytes;
 
-    if (!uart_irq_update(dev)) {
-        return;
-    }
-    /*
-    if (end of scan) {
-        send end of scan to pc
-        uart_fifo_fill(dev, end, sizeof(end));
-    }
-    */
-    if (ring_buf_size_get(&bufRad) == 0) {
-        uart_irq_tx_disable(uart_pc);
-    } else {
-        while (uart_irq_tx_ready(dev)) {
-            /*
-                packet[0] = STX
-                uint_t rad;
-                rad = ring_buf_get(&bufRad, &rad, 1)
-                packet[1] = rad
-                packet[2] = X Position
-                packet[3] = Y Position
-                Packet[4] = Z Position
-                Packet[5] = face
-                Packet[6] = limit swtich value
-                ...
-                packet[...] = EXT
-            */
-            num_bytes = uart_fifo_fill(dev, packet, sizeof(packet));
-        }
+    uart_irq_update(dev);
+
+    while (uart_irq_tx_ready(dev)) {
+        /*
+            packet[0] = STX
+            uint_t rad;
+            rad = ring_buf_get(&bufRad, &rad, 1)
+            packet[1] = rad
+            packet[2] = X Position
+            packet[3] = Y Position
+            Packet[4] = Z Position
+            Packet[5] = face
+            Packet[6] = limit swtich value
+            ...
+            packet[...] = EXT
+        */
+        num_bytes = uart_fifo_fill(dev, packet, sizeof(packet));
     }
 }
 
