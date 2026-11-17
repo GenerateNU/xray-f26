@@ -15,7 +15,7 @@
 
 /// ask about this and overlays
 static const struct device *uart_feather = DEVICE_DT_GET(DT_NODELABEL(usart1));
-static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(lpuart1)); // will change
+static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(usart2)); // will change
 
 //RING_BUF_DECLARE(bufDump, 200);
 //single buffer for now 5 frames, 20 bytes, 4 bytes each
@@ -29,9 +29,6 @@ RING_BUF_DECLARE(buf_pc, 20);
 K_SEM_DEFINE(pc_send_sem, 0, 1);
 
 float threshold = 1; // need to figure out how the app can change this value.
-
-volatile bool start_scan = false;
-volatile bool end_scan = false;
 
 void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
@@ -170,7 +167,7 @@ void pc_rx_uart_cb(const struct device *dev, void *user_data) {
         }
 */
 
-void pc_rx_wake_response() {
+int pc_rx_wake_response() {
     uint8_t buf[1];
 
     while (1) {
@@ -178,53 +175,52 @@ void pc_rx_wake_response() {
         ring_buf_get(&buf_pc, buf, sizeof(buf));
 
         if (buf[0] == '@') {
-            start_scan = true;
             uart_poll_out(uart_pc, ACK);
+            return 0;
         }
     }
 }
 
-void pc_rx_buf_parser() {
+int pc_rx_buf_parser() {
     // will chnage
     uint8_t buf[20];
     uint8_t n;
     uint8_t packet[4];
     int packetLen = 0;
 
-    while (1) {
-        k_sem_take(&pc_send_sem, K_FOREVER);
+    k_sem_take(&pc_send_sem, K_FOREVER);
 
-        n = ring_buf_get(&buf_feather, buf, sizeof(buf));
+    n = ring_buf_get(&buf_pc, buf, sizeof(buf));
 
-        bool startFound = false;
+    bool startFound = false;
 
-        if (n > 1) {
-            for (int i = 0; i < n; i++) {
-                if (buf[i] == STX) {
-                    startFound = true;
-                    packet[packetLen] = buf[i];
-                    packetLen++;
-                    continue;
-                }
+    if (n > 1) {
+        for (int i = 0; i < n; i++) {
+            if (buf[i] == STX) {
+                startFound = true;
+                packet[packetLen] = buf[i];
+                packetLen++;
+                continue;
+            }
 
-                if (startFound && (packetLen < 4)) {
-                    packet[packetLen] = buf[i];
-                    packetLen++;
-                }
+            if (startFound && (packetLen < 4)) {
+                packet[packetLen] = buf[i];
+                packetLen++;
+            }
 
-                if (buf[i] == ETX && startFound && (packetLen == 4)) {
-                    parse_packet(packet);
-                    startFound = false;
-                    packetLen = 0;
-                }
+            if (buf[i] == ETX && startFound && (packetLen == 4)) {
+                parse_packet(packet);
+                startFound = false;
+                packetLen = 0;
+            }
 
-                if (packetLen > 4) {
-                    packetLen = 0;
-                    startFound = false;
-                }
+            if (packetLen > 4) {
+                packetLen = 0;
+                startFound = false;
             }
         }
     }
+    return 0;
 }
 
 void pc_tx_uart_cb(const struct device *dev, void *user_data) {
@@ -254,15 +250,50 @@ void pc_tx_uart_cb(const struct device *dev, void *user_data) {
     }
 }
 
-// K_THREAD_DEFINE(start everyting, 1024, pc_send_signal, NULL, NULL, NULL, 5, 0, 0);
-// immeditately k_thread_suspend(); only start when pc tells it to start sedning
+typedef enum {
+    IDLE,
+    GET_SCAN_DATA,
+    SEND_SCAN_DATA,
+} pc_mcu_communication_t;
 
-int pc_send_signal() {
-    while (1) {
-        if (!ring_buf_is_empty(&bufRad)) {
-            uart_irq_tx_enable(uart_pc);
+volatile pc_mcu_communication_t pc_mcu_communication_state = IDLE;
+
+void switch_pc_mcu_communication_state(pc_mcu_communication_t state) {
+    pc_mcu_communication_state = state;
+}
+
+void pc_mcu_communication_thread() {
+    while (true) {
+        switch (pc_mcu_communication_state) {
+            case IDLE:
+                if (pc_rx_wake_response() == 0) {
+                    switch_pc_mcu_communication_state(GET_SCAN_DATA);
+                }
+                break;
+            case GET_SCAN_DATA:
+                if (pc_rx_buf_parser() == 0) {
+                    switch_pc_mcu_communication_state(SEND_SCAN_DATA);
+                }
+                break;
+            case SEND_SCAN_DATA:
+                send_scan_data_to_pc();
+                /*
+                    if (END_OF_SCAN) {
+                        switch_pc_mcu_communication_state(IDLE);
+                    }
+                */
+                break;
+            default:
+                break;
         }
     }
+}
+
+int send_scan_data_to_pc() {
+    if (!ring_buf_is_empty(&bufRad)) {
+        uart_irq_tx_enable(uart_pc);
+    }
+    return 0;
 }
 
 int pc_serial_isr_init() {

@@ -4,3 +4,17 @@
     current-speed = <115200>;
     status = "okay";
 };
+
+/ {
+	chosen {
+		zephyr,canbus = &can1;
+	};
+};
+
+&can1 {
+	pinctrl-0 = <&can1_rx_pb12 &can1_tx_pb13>;
+	pinctrl-names = "default";
+	bitrate = <500000>;                 /* 500 kbit/s ("bus-speed" before Zephyr 3.7) */
+	sample-point = <875>;               /* optional: 87.5 %, in tenths of a percent */
+	status = "okay";                    /* enable it */
+};

@@ -15,7 +15,4 @@ void rad_isr(void *arg)
 void rad_isr_init(void)
 {
    IRQ_CONNECT(RAD_IRQ, RAD_IRQ_PRIO, my_isr, MY_ISR_ARG, MY_IRQ_FLAGS);
-   // if (radiation data > threshold) {
-    // irq_enable(MY_DEV_IRQ);
-   // }
 }

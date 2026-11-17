@@ -22,7 +22,7 @@ void can_rx_main(void *p1, void *p2, void *p3) {
 
 void send_can_msg(int id, int data) {
     // can sending frame, it only sends 8 bits at a time, so data can't be longer than a byte.
-    // I don't think the data is longer than 255, so it should be fine for now.
+    // I don't think the data is greater than 255, so it should be fine for now.
     struct can_frame frame = {
 		.id = id,
 		.flags = 0,
