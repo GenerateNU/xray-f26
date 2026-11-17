@@ -6,9 +6,12 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
 
     */
 #include <zephyr/dt-bindings/gpio/gpio.h>
-#include <zephyr/dt-bindings/spi/spi.h>
 
-
+/*
+    AS OF NOW, MOTION EN AND MOTION ARM ARE JUST LIKE TURNED ON
+    HOWEVER! I need to impl to make sure that the estop isnt relreased, and that yea check
+    the msg that david sent me and do whatever i need to do
+*/
 /{
     zephyr,user {
         /* STEP GPIOS:
@@ -36,9 +39,9 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
             this turns the driver's power on/off
             for the testing driver this is alr enabled by default when unconnected
             so that;s why we dont have it yet... but will need to impl for the real one*/
-        x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        y-limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        z-limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        y-limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        z-limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
         /* TODO: impl the spi protocal for the actual driver (we dont need it for the curr one) */
 
@@ -48,14 +51,18 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
         z-sleep-gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
 
         // NFAULTTT
-        x-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        y-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
-        z-nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        x-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        y-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        z-nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
         //FWE STATUS LED
         fwe-status-led-gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;
 
+        //MOTION ENABLE PIN
+        motion-enable-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
 
+        //MOTOR ARM
+        motor-arm-gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
 
 
     };
@@ -63,28 +70,30 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
 
 &spi3{
 
-    cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>; // X
-                <&gpiod 2 GPIO_ACTIVE_LOW>; // Y
+    status = "okay";
+    pinctrl-0 = <&spi3_sck_pc10 &spi3_miso_pc11 &spi3_mosi_pc12>;
+    pinctrl-names = "default";
+
+    // CS (Chip Select) GPIOS
+    cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>, // X
+                <&gpiod 2 GPIO_ACTIVE_LOW>, // Y
                 <&gpioc 7 GPIO_ACTIVE_LOW>; // Z
 
     driver_x: drv8462@0{
         compatible = "ti,drv8462";
         reg = <0>;
-        spi_max_frequency = <5312500>;
-
-    }
+        spi-max-frequency = <5312500>;
+    };
 
     driver_y: drv8462@1{
         compatible = "ti,drv8462";
         reg = <1>;
-        spi_max_frequency = <5312500>;
-
-    }
+        spi-max-frequency = <5312500>;
+    };
 
     driver_z: drv8462@2{
         compatible = "ti,drv8462";
         reg = <2>;
-        spi_max_frequency = <5312500>;
-
-    }
-}
+        spi-max-frequency = <5312500>;
+    };
+};
