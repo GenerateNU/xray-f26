@@ -275,10 +275,6 @@ static void test_constant_speed(void){
 }
 
 
-
-
-
-
 int main(void)
 {
     /*

@@ -30,6 +30,14 @@
 #define MICROSTEP_1_4 0x04
 #define EN_AUTO_BIT 0x01
 
+// VREF / current
+#define DRV_REG_CTRL11   0x0E   // TRQ_DAC: the current dial (0-255)
+#define DRV_REG_CTRL13   0x10   // VREF_INT_EN lives in bit 1
+#define TRQ_DAC_VALUE    0xC9 
+#define DRV_REG_CTRL10   0x0D   // ISTSL: holding current
+#define ISTSL_VALUE      TRQ_DAC_VALUE   // same as moving current (for now)
+#define CTRL13_VREF_INT  0x12   // internal 3.3V reference on (bit 1), rest at default
+
 /*
     motor --> 200 full steps per rev x microstepping ( to match the uh dm542t dip switches)
 */
@@ -51,11 +59,9 @@ GRAB DEM DEVICE TREE OVERLAY!!!!
 
 #define USER_NODE DT_PATH(zephyr_user)
 
-static const struct gpio_dt_spec motion_en = GPIO_DT_SPEC(USER_NODE, motion_enable_gpios);
-static const struct gpio_dt_spec motor_arm = GPIO_DT_SPEC(USER_NODE, motor_arm_gpios);
+static const struct gpio_dt_spec motion_en = GPIO_DT_SPEC_GET(USER_NODE, motion_enable_gpios);
+static const struct gpio_dt_spec motor_arm = GPIO_DT_SPEC_GET(USER_NODE, motor_arm_gpios);
 
-
-static const struct gpio_dt_spec fw_status_pin = GPIO_DT_SPEC_GET(USER_NODE, fwe_status_led_gpios);
 
 static int drv_write_reg(const struct axis *axis, uint8_t addy, uint8_t value) 
 {
@@ -120,6 +126,10 @@ static int drv_configure(const struct axis *axis) {
         printk("ERROR! %s CTRL9 readback 0x%02X \n", axis->name, value);
         return -1;
     }
+
+    drv_write_reg(axis, DRV_REG_CTRL11, TRQ_DAC_VALUE);    // 1. set the current
+    drv_write_reg(axis, DRV_REG_CTRL10, ISTSL_VALUE);      // holding current (same for now)
+    drv_write_reg(axis, DRV_REG_CTRL13, CTRL13_VREF_INT);  // 2. turn on the internal reference
 
     printk("%s axis is configured \n", axis->name);
     return 0;
@@ -205,8 +215,10 @@ int motor_power(void) {
     gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);
 
     gpio_pin_set_dt(&motion_en, 1); // ENABLE MOTION
+    k_msleep(5); // wait for the enable to take effect
     gpio_pin_set_dt(&motor_arm, 1); // ARM MOTOR
-    k_msleep(2)
+    k_msleep(2);
+
     return 0;
 }
 
@@ -221,13 +233,29 @@ int axis_enable(const struct axis *axis) {
     }
 
     // we're using an active low so 1 --> FAULT.
-    if (gpio_pin_get_dt(&axis->nfault) == 1) {
+    if (gpio_pin_get_dt(&axis->nfault) == 1) { 
         printk("ERROR! %s axis has a fault \n", axis->name);
         return -1;
     }
 
-    drv_write_reg(axis, 0x04, 0x8F);    //EN_OUT on 
-    gpio_pin_set_dt(&axis->ena, 1); // ENABLE MOTOR
+    drv_write_reg(axis, 0x04, 0x8F);    //EN_OUT on (aka a switch inside the chip)
+    gpio_pin_set_dt(&axis->ena, 1); // ENABLE MOTOR physcial wire from STM 32--ENable pin on driver
+
+    uint8_t value;
+
+    drv_read_reg(axis, 0x04, &value);              // CTRL1: outputs on?
+    if (value != 0x8F) return -1;
+
+    drv_read_reg(axis, DRV_REG_CTRL11, &value);    // current setting
+    if (value != TRQ_DAC_VALUE) return -1;
+
+    drv_read_reg(axis, DRV_REG_CTRL13, &value);    // internal reference on?
+    if (value != CTRL13_VREF_INT) return -1;
+
+    drv_read_reg(axis, 0x00, &value);              // FAULT register
+    if (value & 0x80) return -1;                   // bit 7 = any fault
+
+    
     printk("%s axis is enabled \n", axis->name);
     return 0;
 };

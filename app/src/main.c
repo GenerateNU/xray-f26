@@ -106,6 +106,7 @@ int main(void)
     */
     
 
+    
 
     if (axis_setup(&x_axis) != 0) {
         return 0;
@@ -117,20 +118,32 @@ int main(void)
         return 0;
     }
 
+    //if (motor_power() != 0) return 0;  
+
     if (axis_enable(&z_axis) != 0) {
         return 0;
     }
 
-    axis_move(&z_axis, 800, 1, 1000);
-    axis_move(&z_axis, 800, 0, 1000);
+
+    //axis_move(&z_axis, 1600, 1, 500);
+    //axis_move(&z_axis, 1600, 0, 500);
 
     gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
 
-    while (true) {
-        gpio_pin_toggle_dt(&fw_status_pin);   // flip the LED on/off
-        k_msleep(500);                        // wait half a second
-    }
+     while (true) {
+        if (gpio_pin_get_dt(&z_axis.nfault) == 1) {   // driver says FAULT
+            gpio_pin_toggle_dt(&fw_status_pin);
+            k_msleep(100);                            // fast blink = fault
+            continue;                                 // skip moving, check again
+        }
 
+        axis_move(&z_axis, 1600, 1, 500);
+        gpio_pin_set_dt(&fw_status_pin, 1);
+        k_msleep(250);
+        axis_move(&z_axis, 1600, 0, 500);
+        gpio_pin_set_dt(&fw_status_pin, 0);
+        k_msleep(250);
+    }
 
     return 0;
 

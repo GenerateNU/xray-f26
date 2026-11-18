@@ -16,12 +16,15 @@ struct axis {
     struct spi_dt_spec  spi;     /* SPI type, not GPIO! */
 };
 
+
 /* THE TRIPLE DIPPER  */
 extern const struct axis x_axis;
 extern const struct axis y_axis;
 extern const struct axis z_axis;
 
 int axis_setup(const struct axis *axis);
+
+int motor_power(void);
 
 int axis_enable(const struct axis *axis);
 
