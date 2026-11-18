@@ -48,7 +48,9 @@ void motor_pcb_can_init() {
 
     can_add_rx_filter_msgq(can_dev, &rx_msgq_motor, &can_filter_main);
 
-    can_start(can_dev);
+    if (can_start(can_dev) != 0) {
+        return -1;
+    };
 
     return 0;
 }

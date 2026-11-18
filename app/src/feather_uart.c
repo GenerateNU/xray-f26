@@ -24,6 +24,7 @@ K_SEM_DEFINE(semFeather, 0, 1);
 
 volatile uint8_t threshold = 1; // need to figure out how the app can change this value.
 
+// the callback for when data arrives on the rx line
 void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
     int num_bytes;
@@ -119,13 +120,14 @@ int feather_serial_isr_init(void) {
     return 0;
 }
 
+/*
 int main(void)
 {
     printk("starting\n");
     feather_serial_isr_init();
 
     while (true) {
-        /* switch (state) {
+         switch (state) {
             case STATE_IDLE:
                 wait for command from the app to start scanning.
             case STATE_TESTING:
@@ -145,7 +147,7 @@ int main(void)
                 send report to the app
                 switch to STATE_IDLE
            }
-        */
        k_msleep(100);
     }
 }
+*/

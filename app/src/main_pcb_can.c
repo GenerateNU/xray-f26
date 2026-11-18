@@ -5,6 +5,7 @@
 
 #define ESTOP_ID 0x101
 #define COMMAND_ID 0x102
+#define STATE_ID 0x103
 
 CAN_MSGQ_DEFINE(rx_msgq_main, 10);
 
@@ -16,11 +17,11 @@ void can_rx_main(void *p1, void *p2, void *p3) {
 	while (1) {
 		k_msgq_get(&rx_msgq_main, &frame, K_FOREVER);
 
-        printk("%d, %d", frame.id, frame.data);
+        printk("%d, %d", frame.id, frame.data[0]);
     }
 }
 
-void send_can_msg(int id, int data) {
+int send_can_msg(int id, int data) {
     // can sending frame, it only sends 8 bits at a time, so data can't be longer than a byte.
     // I don't think the data is greater than 255, so it should be fine for now.
     struct can_frame frame = {
@@ -33,7 +34,7 @@ void send_can_msg(int id, int data) {
 	return can_send(can_dev, &frame, K_MSEC(100), NULL, NULL);
 }
 
-void main_pcb_can_init() {
+int main_pcb_can_init() {
 
     if (!device_is_ready(can_dev)) {
 		return -1;
@@ -47,7 +48,9 @@ void main_pcb_can_init() {
 
     can_add_rx_filter_msgq(can_dev, &rx_msgq_main, &can_filter_main);
 
-    can_start(can_dev);
+    if (can_start(can_dev) != 0) {
+        return -1;
+    };
 
     return 0;
 }
@@ -58,7 +61,7 @@ void main_pcb_can_init() {
 K_THREAD_DEFINE(can_rx, 1024, can_rx_main, NULL, NULL, NULL, 5, 0, 0);
 
 int main(void) {
-    if (can_setup() != 0) {
+    if (main_pcb_can_init() != 0) {
 		printk("CAN setup failed");
 	}
 
