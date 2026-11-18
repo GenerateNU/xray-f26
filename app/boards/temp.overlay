@@ -1,0 +1,13 @@
+/ {
+	chosen {
+		zephyr,canbus = &fdcan2;
+	};
+};
+
+&fdcan2 {
+	pinctrl-0 = <&fdcan2_rx_pb12 &fdcan2_tx_pb13>;
+	pinctrl-names = "default";
+	bitrate = <500000>;
+	sample-point = <875>;
+	status = "okay";
+};

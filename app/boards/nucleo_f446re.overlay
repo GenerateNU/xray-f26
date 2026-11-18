@@ -1,0 +1,20 @@
+&usart1 {
+    pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
+    pinctrl-names = "default";
+    current-speed = <115200>;
+    status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,canbus = &can1;
+	};
+};
+
+&can1 {
+	pinctrl-0 = <&can1_rx_pb8 &can1_tx_pb9>;
+	pinctrl-names = "default";
+	bitrate = <500000>;                 /* 500 kbit/s */
+	sample-point = <875>;               /* optional: 87.5 %, in tenths of a percent */
+	status = "okay";                    /* enable it */
+};
