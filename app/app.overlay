@@ -1,0 +1,19 @@
+&arduino_i2c {
+    status = "okay";
+
+    /* SparkFun ISM330DHCX on D14/D15, data-ready interrupt INT1 -> D7 */
+    ism330dhcx: ism330dhcx@6b {
+        compatible = "st,ism330dhcx";
+        reg = <0x6b>;
+        drdy-gpios = <&arduino_header 13 GPIO_ACTIVE_HIGH>;
+        int-pin = <1>;
+    };
+};
+
+/ {
+    zephyr,user {
+        irq-gpios = <&arduino_header 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        tilt-step-gpios = <&arduino_header 11 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_LOW)>;
+        tilt-dir-gpios = <&arduino_header 12 (GPIO_OPEN_DRAIN | GPIO_ACTIVE_LOW)>;
+    };
+};
