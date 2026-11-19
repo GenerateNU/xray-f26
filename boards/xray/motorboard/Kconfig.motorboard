@@ -1,0 +1,2 @@
+config BOARD_MOTORBOARD
+	select SOC_STM32G491XX

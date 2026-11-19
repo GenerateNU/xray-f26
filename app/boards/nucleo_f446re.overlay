@@ -1,0 +1,33 @@
+/* hi so this is like the device tree overlay, aka like which hardwares are connected to where
+
+WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
+    SPI PROTOCAL FOR THE MOTORS
+    ENA PINS FOR THE MOTORS
+
+    */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+
+/{
+    zephyr,user {
+        /* STEP GPIOS:
+            every pulse moves the motor one microstep
+            # of pulses = how far it foes
+            how fast my pulse = how fast it goes  */
+        step-gpios = <&gpioa 8 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+        /* DIR GPIOS:
+            this picks like which way the motor goes (right or left)
+            we set this before stepping and wait at least 5 mu/sec after changing it */
+        dir-gpios  = <&gpiob 10 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+
+        ena-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>;
+        /* ENA GPIOS:
+            this turns the driver's power on/off
+            for the testing driver this is alr enabled by default when unconnected
+            so that;s why we dont have it yet... but will need to impl for the real one*/
+
+        /* TODO: impl ENA GPIOS for the actual driver  */
+        /* TODO: impl the spi protocal for the actual driver (we dont need it for the curr one) */
+
+    };
+};

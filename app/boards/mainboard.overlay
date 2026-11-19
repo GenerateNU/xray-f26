@@ -1,0 +1,99 @@
+/* hi so this is like the device tree overlay, aka like which hardwares are connected to where
+
+WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
+    SPI PROTOCAL FOR THE MOTORS
+    ENA PINS FOR THE MOTORS
+
+    */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/*
+    AS OF NOW, MOTION EN AND MOTION ARM ARE JUST LIKE TURNED ON
+    HOWEVER! I need to impl to make sure that the estop isnt relreased, and that yea check
+    the msg that david sent me and do whatever i need to do
+*/
+/{
+    zephyr,user {
+        /* STEP GPIOS:
+            every pulse moves the motor one microstep
+            # of pulses = how far it foes
+            how fast my pulse = how fast it goes  */
+
+        //FINISH UP ON THE SETTING AFTER THE SPI PROTOCAL IS DONE
+        x-step-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+        y-step-gpios = <&gpiob 6 GPIO_ACTIVE_HIGH>;
+        z-step-gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
+        /* DIR GPIOS:
+            this picks like which way the motor goes (right or left)
+            we set this before stepping and wait at least 5 mu/sec after changing it */
+        x-dir-gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+        y-dir-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+        z-dir-gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+
+
+        x-ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+        y-ena-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+        z-ena-gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+
+        /* ENA GPIOS:
+            this turns the driver's power on/off
+            for the testing driver this is alr enabled by default when unconnected
+            so that;s why we dont have it yet... but will need to impl for the real one*/
+        x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        y-limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        z-limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+        /* TODO: impl the spi protocal for the actual driver (we dont need it for the curr one) */
+
+        // the SLEEP PINS
+        x-sleep-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+        y-sleep-gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+        z-sleep-gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+
+        // NFAULTTT
+        x-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        y-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        z-nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+        //FWE STATUS LED
+        fwe-status-led-gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;
+
+        //MOTION ENABLE PIN
+        motion-enable-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+
+        //MOTOR ARM
+        motor-arm-gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
+
+
+    };
+};
+
+&spi3{
+
+    status = "okay";
+    pinctrl-0 = <&spi3_sck_pc10 &spi3_miso_pc11 &spi3_mosi_pc12>;
+    pinctrl-names = "default";
+
+    // CS (Chip Select) GPIOS
+    cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>, // X
+                <&gpiod 2 GPIO_ACTIVE_LOW>, // Y
+                <&gpioc 7 GPIO_ACTIVE_LOW>; // Z
+
+    driver_x: drv8462@0{
+        compatible = "ti,drv8462";
+        reg = <0>;
+        spi-max-frequency = <5312500>;
+    };
+
+    driver_y: drv8462@1{
+        compatible = "ti,drv8462";
+        reg = <1>;
+        spi-max-frequency = <5312500>;
+    };
+
+    driver_z: drv8462@2{
+        compatible = "ti,drv8462";
+        reg = <2>;
+        spi-max-frequency = <5312500>;
+    };
+};
