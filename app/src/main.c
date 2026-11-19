@@ -104,8 +104,16 @@ int main(void)
         CASE STOP MACHINE
             motor z is lowered down and the power is shut down 
     */
-    
 
+    gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
+    for (int i = 0; i < 3; i++) {          // 3 quick blinks = "I just booted"
+        gpio_pin_set_dt(&fw_status_pin, 1);
+        k_msleep(100);
+        gpio_pin_set_dt(&fw_status_pin, 0);
+        k_msleep(100);
+    }
+    k_msleep(1000);
+    
     
 
     if (axis_setup(&x_axis) != 0) {
@@ -118,7 +126,7 @@ int main(void)
         return 0;
     }
 
-    //if (motor_power() != 0) return 0;  
+    if (motor_power() != 0) return 0;  
 
     if (axis_enable(&z_axis) != 0) {
         return 0;
