@@ -8,6 +8,8 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/ring_buffer.h>
 
+#include "pcb_serial.h"
+
 #define RADIATIONINDEX 1
 #define CEHCKSUMINDEX 2
 

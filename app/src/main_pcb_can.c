@@ -40,6 +40,7 @@ int main_pcb_can_init() {
 		return -1;
 	}
 
+    // accepts every message
     const struct can_filter can_filter_main = {
         .id = 0,
         .mask = 0,

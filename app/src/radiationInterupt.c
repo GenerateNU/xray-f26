@@ -10,7 +10,7 @@
 void rad_isr(void *arg)
 {
     //switch state
-    printk("Radiation threshold reached!!!!")
+    printk("Radiation threshold reached!!!!");
 }
 
 void rad_isr_init(void)
