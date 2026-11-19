@@ -33,7 +33,7 @@
 // VREF / current
 #define DRV_REG_CTRL11   0x0E   // TRQ_DAC: the current dial (0-255)
 #define DRV_REG_CTRL13   0x10   // VREF_INT_EN lives in bit 1
-#define TRQ_DAC_VALUE    0xC9 
+#define TRQ_DAC_VALUE    0xC9  
 #define DRV_REG_CTRL10   0x0D   // ISTSL: holding current
 #define ISTSL_VALUE      TRQ_DAC_VALUE   // same as moving current (for now)
 #define CTRL13_VREF_INT  0x12   // internal 3.3V reference on (bit 1), rest at default
@@ -233,13 +233,13 @@ int axis_enable(const struct axis *axis) {
     }
 
     // we're using an active low so 1 --> FAULT.
-    if (gpio_pin_get_dt(&axis->nfault) == 1) { 
+    if (gpio_pin_get_dt(&axis->nfault) == 0) { 
         printk("ERROR! %s axis has a fault \n", axis->name);
         return -1;
     }
-
-    drv_write_reg(axis, 0x04, 0x8F);    //EN_OUT on (aka a switch inside the chip)
+    
     gpio_pin_set_dt(&axis->ena, 1); // ENABLE MOTOR physcial wire from STM 32--ENable pin on driver
+    drv_write_reg(axis, 0x04, 0x8F);    //EN_OUT on (aka a switch inside the chip)
 
     uint8_t value;
 

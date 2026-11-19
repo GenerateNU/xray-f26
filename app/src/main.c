@@ -118,7 +118,7 @@ int main(void)
         return 0;
     }
 
-    //if (motor_power() != 0) return 0;  
+    if (motor_power() != 0) return 0;  
 
     if (axis_enable(&z_axis) != 0) {
         return 0;
@@ -131,17 +131,17 @@ int main(void)
     gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
 
      while (true) {
-        if (gpio_pin_get_dt(&z_axis.nfault) == 1) {   // driver says FAULT
+        if (gpio_pin_get_dt(&z_axis.nfault) == 0) {   // driver says FAULT
             gpio_pin_toggle_dt(&fw_status_pin);
             k_msleep(100);                            // fast blink = fault
             continue;                                 // skip moving, check again
         }
 
-        axis_move(&z_axis, 1600, 1, 500);
-        gpio_pin_set_dt(&fw_status_pin, 1);
+        axis_move(&z_axis, 1600, 1, 500);  //move 2 rev direciton 1 in 500us steps
+        gpio_pin_set_dt(&fw_status_pin, 1); // blink 
         k_msleep(250);
         axis_move(&z_axis, 1600, 0, 500);
-        gpio_pin_set_dt(&fw_status_pin, 0);
+        gpio_pin_set_dt(&fw_status_pin, 0); 
         k_msleep(250);
     }
 
