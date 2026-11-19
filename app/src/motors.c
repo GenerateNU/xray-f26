@@ -233,7 +233,7 @@ int axis_enable(const struct axis *axis) {
     }
 
     // we're using an active low so 1 --> FAULT.
-    if (gpio_pin_get_dt(&axis->nfault) == 0) { 
+    if (gpio_pin_get_dt(&axis->nfault) == 1) { 
         printk("ERROR! %s axis has a fault \n", axis->name);
         return -1;
     }
