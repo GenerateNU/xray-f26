@@ -139,6 +139,12 @@ int main(void)
     gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
 
      while (true) {
+
+        int pressed = axis_limit_pressed(&z_axis);
+        gpio_pin_set_dt(&fw_status_pin, pressed);
+        k_msleep(100);
+
+        
         if (gpio_pin_get_dt(&z_axis.nfault) == 1) {   // driver says FAULT
             gpio_pin_toggle_dt(&fw_status_pin);
             k_msleep(100);                            // fast blink = fault
