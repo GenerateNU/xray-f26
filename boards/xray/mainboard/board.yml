@@ -1,0 +1,5 @@
+board:
+  name: mainboard
+  full_name: X-Ray Main Board (STM32G491ME)
+  socs:
+    - name: stm32g491xx
