@@ -9,6 +9,8 @@ int axis_limit_pressed(const struct axis *axis) {
 
 // home this axis
 int axis_home(const struct axis *axis, int dir, uint32_t step_interval_us) {
-    // Implementation for homing the axis
+    // start by moving the z axis into the direction of the limit switch until it's pressed
+
+    
     return 0;
 }
