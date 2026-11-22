@@ -165,37 +165,47 @@ static int drv_configure(const struct axis *axis) {
 
 const struct axis x_axis = {
     .name = "X",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, x_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, x_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, x_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, x_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, x_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, x_nfault_gpios),
-    .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_x), DRI_SPI_SET),
+    .step   = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), step_gpios),
+    .dir    = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), dir_gpios),
+    .ena    = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), ena_gpios),
+    .limit  = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), limit_gpios),
+    .sleep  = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), nfault_gpios),
+    .spi    = SPI_DT_SPEC_GET(DT_NODELABEL(driver_x), DRI_SPI_SET),
 };
 
 const struct axis y_axis = {
     .name = "Y",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, y_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, y_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, y_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, y_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, y_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, y_nfault_gpios),
+    .step = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), step_gpios),
+    .dir = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), dir_gpios),
+    .ena = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), ena_gpios),
+    .limit = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), limit_gpios),
+    .sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), nfault_gpios),
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_y), DRI_SPI_SET),
 };
 
 const struct axis z_axis = {
     .name = "Z",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, z_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, z_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, z_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, z_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, z_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, z_nfault_gpios),
+    .step = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), step_gpios),
+    .dir = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), dir_gpios),
+    .ena = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), ena_gpios),
+    .limit = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), limit_gpios),
+    .sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), nfault_gpios),
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_z), DRI_SPI_SET),
 };
 
+bool safe_setup(const struct axis *axis) {
+    
+    if (gpio_pin_get_dt(&axis->nfault) == 1) {
+        printk("ERROR! %s axis has a fault \n", axis->name);
+        return 0;
+    }
+
+
+    return 1;
+}
 
 // THIS IS OUR NEW LIKE PIN SETUP 
 

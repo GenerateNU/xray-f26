@@ -91,12 +91,12 @@
 		compatible = "ti,drv8462";
 		reg = <0>;
 		spi-max-frequency = <5312500>;
-		 x-step-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
-		x-dir-gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
-		x-ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
-		x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-		x-sleep-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
-		x-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		step-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+		dir-gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+		ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+		limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		sleep-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+		nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
 	};
 	// driver Y
@@ -127,4 +127,4 @@
 		nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	};
 
-}
+};
