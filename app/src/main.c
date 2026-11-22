@@ -6,10 +6,6 @@
 #include <zephyr/drivers/gpio.h>
 
 
-#define FULL_STEPS_PER_REV 200 
-#define MICROSTEPS 4 
-#define STEPS_PER_REV (FULL_STEPS_PER_REV * MICROSTEPS)
-
 #define USER_NODE DT_PATH(zephyr_user)
 static const struct gpio_dt_spec fw_status_pin = GPIO_DT_SPEC_GET(USER_NODE, fwe_status_led_gpios);
 
