@@ -196,15 +196,19 @@ const struct axis z_axis = {
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_z), DRI_SPI_SET),
 };
 
-bool safe_setup(const struct axis *axis) {
-    
-    if (gpio_pin_get_dt(&axis->nfault) == 1) {
-        printk("ERROR! %s axis has a fault \n", axis->name);
-        return 0;
-    }
+bool safe_trigger(const struct axis *axis) {
 
+    gpio_pin_configure_dt(&motion_en, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);
 
-    return 1;
+    gpio_pin_configure_dt(z_axis.ena, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(y_axis.ena, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(x_axis.ena, GPIO_OUTPUT_INACTIVE);
+
+    gpio_pin_configure_dt(z_axis.sleep, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(y_axis.sleep, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(x_axis.sleep, GPIO_OUTPUT_INACTIVE);
+
 }
 
 // THIS IS OUR NEW LIKE PIN SETUP 
