@@ -145,8 +145,8 @@ int send_scan_data_to_pc() {
     
     /*
         packet[0] = STX
-        uint_t rad;
-        rad = ring_buf_get(&bufRad, &rad, 1)
+        uint8_t rad;
+        rad = k_msgq_get(&pc_tx_q, &rad, K_FOREVER);
         packet[1] = rad
         packet[2] = X Position
         packet[3] = Y Position
@@ -154,6 +154,7 @@ int send_scan_data_to_pc() {
         Packet[5] = face
         Packet[6] = limit swtich value
         ...
+        packet[...] = checksum
         packet[...] = EXT
     */
 
