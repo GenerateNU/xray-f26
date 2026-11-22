@@ -1,6 +1,7 @@
 // #include <stdio.h>
 #include <zephyr/kernel.h>
 #include "motors.h"
+#include "limit_testing.h"
 // zephyr/device.h is included eventually through kernel.h
 #include <zephyr/drivers/gpio.h>
 
@@ -114,8 +115,6 @@ int main(void)
     }
     k_msleep(1000);
     
-    
-
     if (axis_setup(&x_axis) != 0) {
         return 0;
     }
@@ -138,12 +137,13 @@ int main(void)
 
     gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
 
-     while (true) {
+    while (true) {
 
-        int pressed = axis_limit_pressed(&z_axis);
-        gpio_pin_set_dt(&fw_status_pin, pressed);
-        k_msleep(100);
-
+        if (axis_limit_pressed(&z_axis) == 1) {
+            gpio_pin_set_dt(&fw_status_pin, 1);
+            k_msleep(100);
+            break;
+        }
         
         if (gpio_pin_get_dt(&z_axis.nfault) == 1) {   // driver says FAULT
             gpio_pin_toggle_dt(&fw_status_pin);
