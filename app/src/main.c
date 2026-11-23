@@ -117,6 +117,7 @@ int feather_serial_isr_init(void) {
     uart_irq_rx_enable(uart_feather);
 
     return 0;
+    
 }
 
 int main(void)
