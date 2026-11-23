@@ -1,0 +1,49 @@
+/*
+ * Motor Board: rotational motors R1 and R2 (pins from MotorBoard.ioc)
+ * Testing BOTH motors and BOTH limit switches.
+ * Limit switches: HIGH = hit (also HIGH if unplugged, so the motor stops).
+ */
+
+/* SPI3 talks to both driver chips. Each driver has its own CS (chip select) pin. */
+&spi3 {
+    status = "okay";
+    pinctrl-0 = <&spi3_sck_pc10 &spi3_miso_pc11 &spi3_mosi_pc12>;
+    pinctrl-names = "default";
+    cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>,    /* CS 0 = R1_CS (PC1) */
+               <&gpiod 2 GPIO_ACTIVE_LOW>;    /* CS 1 = R2_CS (PD2) */
+
+    driver_r1: drv8462@0 {
+        compatible = "vnd,spi-device";
+        reg = <0>;                            /* uses CS 0 */
+        spi-max-frequency = <5312500>;
+    };
+
+    driver_r2: drv8462@1 {
+        compatible = "vnd,spi-device";
+        reg = <1>;                            /* uses CS 1 */
+        spi-max-frequency = <5312500>;
+    };
+};
+
+/ {
+    zephyr,user {
+        /* R1 (tilt) */
+        r1-step-gpios   = <&gpioa 0 GPIO_ACTIVE_HIGH>;                   /* PA0  R1_STEP_MCU */
+        r1-dir-gpios    = <&gpioa 1 GPIO_ACTIVE_HIGH>;                   /* PA1  R1_DIR */
+        r1-ena-gpios    = <&gpioc 3 GPIO_ACTIVE_HIGH>;                   /* PC3  R1_ENABLE */
+        r1-sleep-gpios  = <&gpioc 2 GPIO_ACTIVE_HIGH>;                   /* PC2  R1_SLEEP */
+        r1-nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;   /* PC0  R1_nFAULT */
+        r1-limit-gpios  = <&gpioc 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>; /* PC13 LIM_R1: HIGH = hit */
+
+        /* R2 (pan) */
+        r2-step-gpios   = <&gpioa 11 GPIO_ACTIVE_HIGH>;                  /* PA11 R2_STEP_MCU */
+        r2-dir-gpios    = <&gpiob 7 GPIO_ACTIVE_HIGH>;                   /* PB7  R2_DIR */
+        r2-ena-gpios    = <&gpiob 5 GPIO_ACTIVE_HIGH>;                   /* PB5  R2_ENABLE */
+        r2-sleep-gpios  = <&gpiob 4 GPIO_ACTIVE_HIGH>;                   /* PB4  R2_SLEEP */
+        r2-nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;   /* PB3  R2_nFAULT */
+        r2-limit-gpios  = <&gpiob 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;  /* PB9  LIM_R2: HIGH = hit */
+
+        /* ARMED_MOTOR: driven HIGH at startup */
+        armed-motor-gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;                /* PA10 ARMED_MOTOR */
+    };
+};
