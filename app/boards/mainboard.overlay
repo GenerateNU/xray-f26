@@ -1,0 +1,40 @@
+/* hi so this is like the device tree overlay, aka like which hardwares are connected to where
+
+WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
+    SPI PROTOCAL FOR THE MOTORS
+    ENA PINS FOR THE MOTORS
+
+    */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/*
+    AS OF NOW, MOTION EN AND MOTION ARM ARE JUST LIKE TURNED ON
+    HOWEVER! I need to impl to make sure that the estop isnt relreased, and that yea check
+    the msg that david sent me and do whatever i need to do
+*/
+/{
+    zephyr,user {
+        /* STEP GPIOS:
+            every pulse moves the motor one microstep
+            # of pulses = how far it foes
+            how fast my pulse = how fast it goes  */
+
+        //FWE STATUS LED
+        fwe-status-led-gpios = <&gpioc 5 GPIO_ACTIVE_HIGH>;
+
+        //MOTION ENABLE PIN
+        motion-enable-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+
+        //MOTOR ARM
+        motor-arm-gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
+
+        //estop status
+        estop-pin-gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>;
+
+        //arm status
+        motor-arm-status-gpios = <&gpioc 4 GPIO_ACTIVE_HIGH>;
+
+
+    };
+};
+

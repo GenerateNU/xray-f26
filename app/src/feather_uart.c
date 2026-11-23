@@ -8,6 +8,8 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/ring_buffer.h>
 
+#include "pcb_serial.h"
+
 #define RADIATIONINDEX 1
 #define CEHCKSUMINDEX 2
 
@@ -18,12 +20,17 @@ static const struct device *uart_feather = DEVICE_DT_GET(DT_NODELABEL(usart1));
 
 //single buffer for now
 RING_BUF_DECLARE(bufA, 128);
-// buffer with only radiation data
-RING_BUF_DECLARE(bufRad, 20);
+
+// buffer with only radiation data one for rescaning and one for sending to pc.
+K_MSGQ_DEFINE(rescan_q, 1, 20, 1);
+K_MSGQ_DEFINE(pc_tx_q, 1, 20, 1);
+
 K_SEM_DEFINE(semFeather, 0, 1);
 
 volatile uint8_t threshold = 1; // need to figure out how the app can change this value.
+volatile bool RESCAN = false; // need to figure out how the app can change this value.
 
+// the callback for when data arrives on the rx line
 void feather_rx_uart_cb(const struct device *dev, void *user_data) {
     uint8_t buf[20];
     int num_bytes;
@@ -51,15 +58,20 @@ int parse_packet(uint8_t frame[]) {
         return -1;
     }
 
-    if (radiation >= threshold ) {
+    if (radiation >= threshold && !RESCAN) {
         // activate interupt.
         // irq_enable(IRQ_Radiation);
+        RESCAN = true;
     }
 
     printk("%d\n", radiation);
 
     // single buffer for now
-    ring_buf_put(&bufRad, &radiation, sizeof(radiation));
+    if (RESCAN) {
+        k_msgq_put(&rescan_q, &radiation, K_FOREVER);
+    }
+    
+    k_msgq_put(&pc_tx_q, &radiation, K_FOREVER);
 
     /* double buffer
     if (ring_buf_space_get(&bufA) == 0) {
@@ -119,13 +131,14 @@ int feather_serial_isr_init(void) {
     return 0;
 }
 
+/*
 int main(void)
 {
     printk("starting\n");
     feather_serial_isr_init();
 
     while (true) {
-        /* switch (state) {
+         switch (state) {
             case STATE_IDLE:
                 wait for command from the app to start scanning.
             case STATE_TESTING:
@@ -145,7 +158,7 @@ int main(void)
                 send report to the app
                 switch to STATE_IDLE
            }
-        */
        k_msleep(100);
     }
 }
+*/
