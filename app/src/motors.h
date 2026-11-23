@@ -30,4 +30,5 @@ int axis_enable(const struct axis *axis);
 
 int axis_move(const struct axis *axis, int steps, int dir, uint32_t step_interval_us);
 
+void safe_trigger(void);
 #endif

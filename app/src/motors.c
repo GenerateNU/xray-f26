@@ -122,38 +122,6 @@ static int drv_configure(const struct axis *axis) {
     }
 
 
-    /* 
-    
-    if (drv_write_reg(axis, DRV_REG_CTRL9, EN_AUTO_BIT) != 0) {
-        printk("ERROR! %s axis failed to set auto microstepping \n", axis->name);
-        return -1;
-    }
-
-
-    if (drv_write_reg(axis, DRV_REG_CTRL9, EN_AUTO_BIT) != 0) {
-        printk("ERROR! %s axis failed to set open-loop \n", axis->name);
-        return -1;
-
-    }
-
-
-    // set the auto microstepping bit 
-    
-    // set the open-loop bit
-    // open load detection is off for now
-    // aka if u wanna turn it on, jyst add EN_OL_Bit ||
-
-
-    drv_read_reg(axis, DRV_REG_CTRL9, &value);
-    if (value != EN_AUTO_BIT) {
-        printk("ERROR! %s CTRL9 readback 0x%02X \n", axis->name, value);
-        return -1;
-    }
-    
-    */
-
-
-
     drv_write_reg(axis, DRV_REG_CTRL11, TRQ_DAC_VALUE);    // 1. set the current
     drv_write_reg(axis, DRV_REG_CTRL10, ISTSL_VALUE);      // holding current (same for now)
     drv_write_reg(axis, DRV_REG_CTRL13, CTRL13_VREF_INT);  // 2. turn on the internal reference
@@ -196,18 +164,24 @@ const struct axis z_axis = {
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_z), DRI_SPI_SET),
 };
 
-bool safe_trigger(const struct axis *axis) {
+void safe_trigger(void) {
 
-    gpio_pin_configure_dt(&motion_en, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);
+    const struct axis *axes[] = { &x_axis, &y_axis, &z_axis };
 
-    gpio_pin_configure_dt(z_axis.ena, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(y_axis.ena, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(x_axis.ena, GPIO_OUTPUT_INACTIVE);
+    // 1. driver outputs off (instant, hardware)
+    for (int i = 0; i < 3; i++) {
+        gpio_pin_set_dt(&axes[i]->ena, 0);
+    }
 
-    gpio_pin_configure_dt(z_axis.sleep, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(y_axis.sleep, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(x_axis.sleep, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_set_dt(&motion_en, 0);
+    gpio_pin_set_dt(&motor_arm, 0);
+
+    // 3. EN_OUT off inside each driver 
+    for (int i = 0; i < 3; i++) {
+        drv_write_reg(axes[i], DRV_REG_CTRL1, CTRL1_DEFAULT);   // 0x0F = EN_OUT bit cleared
+    }
+
+    printk("SAFE STATE: all motors off\n");
 
 }
 
@@ -244,33 +218,6 @@ int axis_setup(const struct axis *axis) {
 
 };
 
-/* 
-
-int motor_power(void) {
-
-    if (!gpio_is_ready_dt(&motion_en) || !gpio_is_ready_dt(&motor_arm)) {
-        printk("ERROR! MOTOR POWER IS NOT READY\n");
-        return -1;
-    }
-
-    gpio_pin_configure_dt(&estop_status, GPIO_INPUT); 
-    gpio_pin_configure_dt(&arm_status, GPIO_INPUT);
-    gpio_pin_configure_dt(&motion_en, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);
-
-     printk("estop status: %d, armed status: %d\n",
-           gpio_pin_get_dt(&estop_status), gpio_pin_get_dt(&arm_status));
-    
-    gpio_pin_set_dt(&motion_en, 1); // ENABLE MOTION
-    k_msleep(5); // wait for the enable to take effect
-    gpio_pin_set_dt(&motor_arm, 1); // ARM MOTOR
-    k_msleep(5);
-
-    return 0;
-}
-
-
-*/
 
 int motor_power(void) {
     if (!gpio_is_ready_dt(&motion_en) || !gpio_is_ready_dt(&motor_arm) ||
@@ -291,6 +238,7 @@ int motor_power(void) {
     // 2. is the e-stop released? (HIGH = OK)
     if (gpio_pin_get_dt(&estop_status) != 1) {
         printk("ERROR! E-STOP pressed or not connected\n");
+        safe_trigger();
         return -1;
     }
 
@@ -303,6 +251,7 @@ int motor_power(void) {
     // 4. did it actually arm?
     if (gpio_pin_get_dt(&arm_status) != 1) {
         printk("ERROR! board did not arm\n");
+        safe_trigger();
         return -1;
     }
 
@@ -317,12 +266,14 @@ int axis_enable(const struct axis *axis) {
 
     if (drv_configure(axis) != 0) {
         printk("ERROR! %s axis failed to configure \n", axis->name);
+        safe_trigger();
         return -1;
     }
 
     // we're using an active low so 1 --> FAULT.
     if (gpio_pin_get_dt(&axis->nfault) == 1) { 
         printk("ERROR! %s axis has a fault \n", axis->name);
+        safe_trigger();
         return -1;
     }
 
@@ -332,17 +283,33 @@ int axis_enable(const struct axis *axis) {
 
     uint8_t value;
 
-    drv_read_reg(axis, 0x04, &value);              // CTRL1: outputs on?
-    if (value != 0x8F) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL1, &value);
+    if (value != (CTRL1_DEFAULT | EN_OUT_BIT)) {
+        printk("ERROR! %s EN_OUT readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, DRV_REG_CTRL11, &value);    // current setting
-    if (value != TRQ_DAC_VALUE) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL11, &value); // current setting
+    if (value != TRQ_DAC_VALUE) {
+        printk("ERROR! %s current readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, DRV_REG_CTRL13, &value);    // internal reference on?
-    if (value != CTRL13_VREF_INT) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL13, &value); //is the internal ref on
+    if (value != CTRL13_VREF_INT) {
+        printk("ERROR! %s VREF readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, 0x00, &value);              // FAULT register
-    if (value & 0x80) return -1;                   // bit 7 = any fault
+    drv_read_reg(axis, 0x00, &value);             // FAULT register
+    if (value & 0x80) {
+        printk("ERROR! %s fault register 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }        // bit 7 = any fault
 
     
     printk("%s axis is enabled \n", axis->name);
