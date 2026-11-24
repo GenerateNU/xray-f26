@@ -34,7 +34,7 @@ K_MSGQ_DEFINE(pc_tx_q, sizeof(tx_frame), 8, 1);
 
 static const struct device *uart_pc = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_uart0));
 
-volatile bool MOTOR_START = true;
+volatile bool MOTOR_START = false;
 
 // callback for when data arrives on the rx line
 void pc_rx_uart_cb(const struct device *dev, void *user_data) {
@@ -45,6 +45,10 @@ void pc_rx_uart_cb(const struct device *dev, void *user_data) {
 
     while (uart_irq_rx_ready(dev)) {
         num_bytes = uart_fifo_read(dev, &buf, sizeof(buf));
+        if (num_bytes <= 0) {
+            break;              // FIFO empty: exit instead of looping forever
+        }
+        
         if (num_bytes > 0) {
             printk("%u", buf);
             if (buf == STX) {
@@ -61,12 +65,6 @@ int pc_serial_isr_init() {
         return -1;
     }
 
-    uint32_t dtr = 0;
-    while (!dtr) {
-        uart_line_ctrl_get(uart_pc, UART_LINE_CTRL_DTR, &dtr);
-        k_msleep(100);
-    }
-
     uart_irq_callback_user_data_set(uart_pc, pc_rx_uart_cb, NULL);
 
     uart_irq_rx_enable(uart_pc);
@@ -77,17 +75,17 @@ int main(void)
 {
     printk("starting\n");
 
-    if (pc_serial_isr_init() < 0) {
-        printk("USB init failed\n");
-        return 0;
-    }
+    pc_serial_isr_init();
 
     axis_setup(&z_axis);
     axis_enable(&z_axis);
     motor_power();
 
     while (true) {
-        axis_move(&z_axis, 1600, 1, 500);
+        if (MOTOR_START) {
+            axis_move(&z_axis, 1600, 1, 500);
+        }
+
         printk("starting\n");
         k_msleep(5000);
     }
