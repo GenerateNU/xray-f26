@@ -134,17 +134,15 @@ int main(void)
     gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
 
     while (true) {
-
-        if (axis_limit_pressed(&z_axis) == 1) {
-            gpio_pin_set_dt(&fw_status_pin, 1);
-            k_msleep(100);
-            break;
-        }
         
         if (gpio_pin_get_dt(&z_axis.nfault) == 1) {   // driver says FAULT
             gpio_pin_toggle_dt(&fw_status_pin);
             k_msleep(100);                            // fast blink = fault
             continue;                                 // skip moving, check again
+        }
+
+        if (home_axis(&z_axis) == 0) {
+        gpio_pin_set_dt(&fw_status_pin, 1);    // LED solid ON
         }
 
         axis_move(&z_axis, 1600, 1, 500);

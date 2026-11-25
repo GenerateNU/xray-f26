@@ -38,8 +38,12 @@ WHAT NEEDS TO BE IMPL FOR THE ACC PCB:
         /* ENA GPIOS:
             this turns the driver's power on/off
             for the testing driver this is alr enabled by default when unconnected
-            so that;s why we dont have it yet... but will need to impl for the real one*/
-        x-limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            so that;s why we dont have it yet... but will need to impl for the real one
+
+            ACTIVE HIGH CONFIRMED BY ZACH ON 11/23/2026
+            */
+
+        x-limit-gpios = <&gpioc 13 ACTIVE HIGH>;
         y-limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         z-limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
