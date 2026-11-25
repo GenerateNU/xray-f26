@@ -5,10 +5,6 @@
 #include <zephyr/drivers/gpio.h>
 
 
-#define FULL_STEPS_PER_REV 200 
-#define MICROSTEPS 4 
-#define STEPS_PER_REV (FULL_STEPS_PER_REV * MICROSTEPS)
-
 #define USER_NODE DT_PATH(zephyr_user)
 static const struct gpio_dt_spec fw_status_pin = GPIO_DT_SPEC_GET(USER_NODE, fwe_status_led_gpios);
 
@@ -104,8 +100,16 @@ int main(void)
         CASE STOP MACHINE
             motor z is lowered down and the power is shut down 
     */
-    
 
+    gpio_pin_configure_dt(&fw_status_pin, GPIO_OUTPUT_INACTIVE);
+    for (int i = 0; i < 3; i++) {          // 3 quick blinks = "I just booted"
+        gpio_pin_set_dt(&fw_status_pin, 1);
+        k_msleep(100);
+        gpio_pin_set_dt(&fw_status_pin, 0);
+        k_msleep(100);
+    }
+    k_msleep(1000);
+    
     
 
     if (axis_setup(&x_axis) != 0) {
@@ -118,7 +122,7 @@ int main(void)
         return 0;
     }
 
-    // if (motor_power() != 0) return 0;  
+    if (motor_power() != 0) return 0;  
 
     if (axis_enable(&z_axis) != 0) {
         return 0;
@@ -144,7 +148,4 @@ int main(void)
         gpio_pin_set_dt(&fw_status_pin, 0); 
         k_msleep(250);
     }
-
-    return 0;
-
 }

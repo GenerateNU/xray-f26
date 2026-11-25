@@ -77,3 +77,54 @@
 	current-speed = <115200>;
 	status = "okay";
 };
+
+&spi3 {
+	status = "okay";
+	pinctrl-0 = <&spi3_sck_pc10 &spi3_miso_pc11 &spi3_mosi_pc12>;
+	pinctrl-names = "default";
+
+	cs-gpios = <&gpioc 1 GPIO_ACTIVE_LOW>, // X
+                <&gpiod 2 GPIO_ACTIVE_LOW>, // Y
+                <&gpioc 7 GPIO_ACTIVE_LOW>; // Z
+
+	driver_x: drv8462@0 {
+		compatible = "ti,drv8462";
+		reg = <0>;
+		spi-max-frequency = <5312500>;
+		step-gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+		dir-gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+		ena-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+		limit-gpios = <&gpioc 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		sleep-gpios = <&gpioc 2 GPIO_ACTIVE_HIGH>;
+		nfault-gpios = <&gpioc 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+	};
+	// driver Y
+	driver_y: drv8462@1 {
+		compatible = "ti,drv8462";
+		reg = <1>;
+		spi-max-frequency = <5312500>;
+		step-gpios = <&gpiob 6 GPIO_ACTIVE_HIGH>;
+		dir-gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+		ena-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+		limit-gpios = <&gpiob 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		sleep-gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+		nfault-gpios = <&gpiob 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+
+	};
+
+
+	// driver Z
+	driver_z: drv8462@2 {
+		compatible = "ti,drv8462";
+		reg = <2>;
+		spi-max-frequency = <5312500>;
+		step-gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
+		dir-gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+		ena-gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+		limit-gpios = <&gpioc 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		sleep-gpios = <&gpioc 9 GPIO_ACTIVE_HIGH>;
+		nfault-gpios = <&gpioc 8 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	};
+
+};

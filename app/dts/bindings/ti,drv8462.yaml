@@ -1,6 +1,25 @@
-
-description: this is the binding for the motor driver
+description: TI DRV8462 stepper motor driver, configured over SPI
 
 compatible: "ti,drv8462"
 
 include: spi-device.yaml
+
+properties:
+  step-gpios:
+    type: phandle-array
+    required: true
+  dir-gpios:
+    type: phandle-array
+    required: true
+  ena-gpios:
+    type: phandle-array
+    required: true
+  sleep-gpios:
+    type: phandle-array
+    required: true
+  nfault-gpios:
+    type: phandle-array
+    required: true
+  limit-gpios:
+    type: phandle-array
+    required: true

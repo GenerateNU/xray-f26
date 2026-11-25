@@ -18,8 +18,8 @@
 
 // driver registers 
 #define DRV_REG_CTRL2 0x05 //MICROSTEPPING BITS 0-3 + STEP/DIR pins we're leaving at 0
-#define DRV_REG_CTRL9 0x0c // EN_AUTO in bit 0 (AUTOMICROSTEPPING!!!)
-#define EN_OL_BIT 0x80 // bit 7 in CTRL9
+//#define DRV_REG_CTRL9 0x0c // EN_AUTO in bit 0 (AUTOMICROSTEPPING!!!)
+//#define EN_OL_BIT 0x80 // bit 7 in CTRL9
 #define DRV_READ_BIT (1u << 14) // bit 14 = 1 means read 
 
 // EN_PUT
@@ -30,13 +30,26 @@
 #define MICROSTEP_1_4 0x04
 #define EN_AUTO_BIT 0x01
 
-// VREF / current
+/* 
+Z AXIS 
 #define DRV_REG_CTRL11   0x0E   // TRQ_DAC: the current dial (0-255)
 #define DRV_REG_CTRL13   0x10   // VREF_INT_EN lives in bit 1
 #define TRQ_DAC_VALUE    0xC9  
 #define DRV_REG_CTRL10   0x0D   // ISTSL: holding current
 #define ISTSL_VALUE      TRQ_DAC_VALUE   // same as moving current (for now)
 #define CTRL13_VREF_INT  0x12   // internal 3.3V reference on (bit 1), rest at default
+
+
+*/
+// VREF / current
+#define DRV_REG_CTRL11   0x0E   // TRQ_DAC: the current dial (0-255)
+#define DRV_REG_CTRL13   0x10   // VREF_INT_EN lives in bit 1
+#define TRQ_DAC_VALUE    0xC9 
+//#define TRQ_DAC_VALUE    0x97 
+#define DRV_REG_CTRL10   0x0D   // ISTSL: holding current
+#define ISTSL_VALUE      TRQ_DAC_VALUE   // same as moving current (for now)
+#define CTRL13_VREF_INT  0x12   // internal 3.3V reference on (bit 1), rest at default
+
 
 /*
     motor --> 200 full steps per rev x microstepping ( to match the uh dm542t dip switches)
@@ -61,6 +74,8 @@ GRAB DEM DEVICE TREE OVERLAY!!!!
 
 static const struct gpio_dt_spec motion_en = GPIO_DT_SPEC_GET(USER_NODE, motion_enable_gpios);
 static const struct gpio_dt_spec motor_arm = GPIO_DT_SPEC_GET(USER_NODE, motor_arm_gpios);
+static const struct gpio_dt_spec estop_status = GPIO_DT_SPEC_GET(USER_NODE, estop_pin_gpios);
+static const struct gpio_dt_spec arm_status = GPIO_DT_SPEC_GET(USER_NODE, motor_arm_status_gpios);
 
 
 static int drv_write_reg(const struct axis *axis, uint8_t addy, uint8_t value) 
@@ -106,26 +121,6 @@ static int drv_configure(const struct axis *axis) {
         return -1;
     }
 
-    // set the auto microstepping bit 
-    if (drv_write_reg(axis, DRV_REG_CTRL9, EN_AUTO_BIT) != 0) {
-        printk("ERROR! %s axis failed to set auto microstepping \n", axis->name);
-        return -1;
-    }
-
-    // set the open-loop bit
-    // open load detection is off for now
-    // aka if u wanna turn it on, jyst add EN_OL_Bit ||
-    if (drv_write_reg(axis, DRV_REG_CTRL9, EN_AUTO_BIT) != 0) {
-        printk("ERROR! %s axis failed to set open-loop \n", axis->name);
-        return -1;
-
-    }
-
-    drv_read_reg(axis, DRV_REG_CTRL9, &value);
-    if (value != EN_AUTO_BIT) {
-        printk("ERROR! %s CTRL9 readback 0x%02X \n", axis->name, value);
-        return -1;
-    }
 
     drv_write_reg(axis, DRV_REG_CTRL11, TRQ_DAC_VALUE);    // 1. set the current
     drv_write_reg(axis, DRV_REG_CTRL10, ISTSL_VALUE);      // holding current (same for now)
@@ -138,37 +133,57 @@ static int drv_configure(const struct axis *axis) {
 
 const struct axis x_axis = {
     .name = "X",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, x_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, x_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, x_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, x_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, x_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, x_nfault_gpios),
-    .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_x), DRI_SPI_SET),
+    .step   = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), step_gpios),
+    .dir    = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), dir_gpios),
+    .ena    = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), ena_gpios),
+    .limit  = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), limit_gpios),
+    .sleep  = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_x), nfault_gpios),
+    .spi    = SPI_DT_SPEC_GET(DT_NODELABEL(driver_x), DRI_SPI_SET),
 };
 
 const struct axis y_axis = {
     .name = "Y",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, y_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, y_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, y_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, y_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, y_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, y_nfault_gpios),
+    .step = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), step_gpios),
+    .dir = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), dir_gpios),
+    .ena = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), ena_gpios),
+    .limit = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), limit_gpios),
+    .sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_y), nfault_gpios),
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_y), DRI_SPI_SET),
 };
 
 const struct axis z_axis = {
     .name = "Z",
-    .step = GPIO_DT_SPEC_GET(USER_NODE, z_step_gpios),
-    .dir = GPIO_DT_SPEC_GET(USER_NODE, z_dir_gpios),
-    .ena = GPIO_DT_SPEC_GET(USER_NODE, z_ena_gpios),
-    .limit = GPIO_DT_SPEC_GET(USER_NODE, z_limit_gpios),
-    .sleep = GPIO_DT_SPEC_GET(USER_NODE, z_sleep_gpios),
-    .nfault = GPIO_DT_SPEC_GET(USER_NODE, z_nfault_gpios),
+    .step = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), step_gpios),
+    .dir = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), dir_gpios),
+    .ena = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), ena_gpios),
+    .limit = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), limit_gpios),
+    .sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), sleep_gpios),
+    .nfault = GPIO_DT_SPEC_GET(DT_NODELABEL(driver_z), nfault_gpios),
     .spi = SPI_DT_SPEC_GET(DT_NODELABEL(driver_z), DRI_SPI_SET),
 };
 
+void safe_trigger(void) {
+
+    const struct axis *axes[] = { &x_axis, &y_axis, &z_axis };
+
+    // 1. driver outputs off (instant, hardware)
+    for (int i = 0; i < 3; i++) {
+        gpio_pin_set_dt(&axes[i]->ena, 0);
+    }
+
+    gpio_pin_set_dt(&motion_en, 0);
+    gpio_pin_set_dt(&motor_arm, 0);
+
+    // 3. EN_OUT off inside each driver 
+    for (int i = 0; i < 3; i++) {
+        drv_write_reg(axes[i], DRV_REG_CTRL1, CTRL1_DEFAULT);   // 0x0F = EN_OUT bit cleared
+    }
+
+    printk("SAFE STATE: all motors off\n");
+
+}
 
 // THIS IS OUR NEW LIKE PIN SETUP 
 
@@ -205,20 +220,42 @@ int axis_setup(const struct axis *axis) {
 
 
 int motor_power(void) {
-
-    if (!gpio_is_ready_dt(&motion_en) || !gpio_is_ready_dt(&motor_arm)) {
-        printk("ERROR! MOTOR POWER IS NOT READY\n");
+    if (!gpio_is_ready_dt(&motion_en) || !gpio_is_ready_dt(&motor_arm) ||
+        !gpio_is_ready_dt(&estop_status) || !gpio_is_ready_dt(&arm_status)) {
+        printk("ERROR! MOTOR POWER PINS NOT READY\n");
         return -1;
     }
 
+    gpio_pin_configure_dt(&estop_status, GPIO_INPUT);
+    gpio_pin_configure_dt(&arm_status, GPIO_INPUT);
     gpio_pin_configure_dt(&motion_en, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&motor_arm, GPIO_OUTPUT_INACTIVE);   // starts LOW
 
-    gpio_pin_set_dt(&motion_en, 1); // ENABLE MOTION
-    k_msleep(5); // wait for the enable to take effect
-    gpio_pin_set_dt(&motor_arm, 1); // ARM MOTOR
-    k_msleep(2);
+    // 1. give permission
+    gpio_pin_set_dt(&motion_en, 1);
+    k_msleep(5);
 
+    // 2. is the e-stop released? (HIGH = OK)
+    if (gpio_pin_get_dt(&estop_status) != 1) {
+        printk("ERROR! E-STOP pressed or not connected\n");
+        safe_trigger();
+        return -1;
+    }
+
+    // 3. arm: LOW -> HIGH edge latches U6
+    gpio_pin_set_dt(&motor_arm, 0);
+    k_msleep(1);
+    gpio_pin_set_dt(&motor_arm, 1);
+    k_msleep(5);
+
+    // 4. did it actually arm?
+    if (gpio_pin_get_dt(&arm_status) != 1) {
+        printk("ERROR! board did not arm\n");
+        safe_trigger();
+        return -1;
+    }
+
+    printk("MOTORS ARMED\n");
     return 0;
 }
 
@@ -229,31 +266,50 @@ int axis_enable(const struct axis *axis) {
 
     if (drv_configure(axis) != 0) {
         printk("ERROR! %s axis failed to configure \n", axis->name);
+        safe_trigger();
         return -1;
     }
 
     // we're using an active low so 1 --> FAULT.
     if (gpio_pin_get_dt(&axis->nfault) == 1) { 
         printk("ERROR! %s axis has a fault \n", axis->name);
+        safe_trigger();
         return -1;
     }
-    
+
+
     gpio_pin_set_dt(&axis->ena, 1); // ENABLE MOTOR physcial wire from STM 32--ENable pin on driver
     drv_write_reg(axis, 0x04, 0x8F);    //EN_OUT on (aka a switch inside the chip)
 
     uint8_t value;
 
-    drv_read_reg(axis, 0x04, &value);              // CTRL1: outputs on?
-    if (value != 0x8F) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL1, &value);
+    if (value != (CTRL1_DEFAULT | EN_OUT_BIT)) {
+        printk("ERROR! %s EN_OUT readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, DRV_REG_CTRL11, &value);    // current setting
-    if (value != TRQ_DAC_VALUE) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL11, &value); // current setting
+    if (value != TRQ_DAC_VALUE) {
+        printk("ERROR! %s current readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, DRV_REG_CTRL13, &value);    // internal reference on?
-    if (value != CTRL13_VREF_INT) return -1;
+    drv_read_reg(axis, DRV_REG_CTRL13, &value); //is the internal ref on
+    if (value != CTRL13_VREF_INT) {
+        printk("ERROR! %s VREF readback 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }
 
-    drv_read_reg(axis, 0x00, &value);              // FAULT register
-    if (value & 0x80) return -1;                   // bit 7 = any fault
+    drv_read_reg(axis, 0x00, &value);             // FAULT register
+    if (value & 0x80) {
+        printk("ERROR! %s fault register 0x%02X\n", axis->name, value);
+        safe_trigger();
+        return -1;
+    }        // bit 7 = any fault
 
     
     printk("%s axis is enabled \n", axis->name);
@@ -266,6 +322,8 @@ int axis_enable(const struct axis *axis) {
 // yo btw steps is j how many steps the motor takes (in microsteps) 
 
 int axis_move (const struct axis *axis, int steps, int dir, uint32_t interval_us) {
+
+    //spi_cs_control(&axis->spi, 1, 0); // set the CS pin to inactive (high) and 0 delay
 
     // make sure its not going too fast 
     if (interval_us < MIN_STEP_INTERVAL_US) {
